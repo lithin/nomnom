@@ -55,11 +55,18 @@ export const useChat = () => {
     }
   };
 
+  const startNewChat = () => {
+    setMessages([]);
+    setInput("");
+    setIsSending(false);
+  };
+
   return {
     messages,
     input,
     isSending,
     setInput,
     handleSend,
+    startNewChat,
   };
 };

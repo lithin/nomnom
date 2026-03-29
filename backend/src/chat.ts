@@ -63,12 +63,12 @@ export const setupChatEndpoint = (app: Router) => {
       // Handle function calls
       if (response.functionCalls && response.functionCalls.length > 0) {
         const functionResponseParts = [];
-        
+
         for (const call of response.functionCalls) {
           if (call.name === "saveRecipe") {
             const args = call.args as unknown as { recipe: string };
             await saveRecipe(args);
-            
+
             functionResponseParts.push({
               functionResponse: {
                 name: call.name,

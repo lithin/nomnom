@@ -1,15 +1,17 @@
 import { StatusBar } from "expo-status-bar";
 import { KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet } from "react-native";
 
+import { ChatHeader } from "./src/chat/components/ChatHeader";
 import { ChatInput } from "./src/chat/components/ChatInput";
 import { MessageList } from "./src/chat/components/MessageList";
 import { useChat } from "./src/chat/useChat";
 
 export default function App() {
-  const { messages, input, isSending, setInput, handleSend } = useChat();
+  const { messages, input, isSending, setInput, handleSend, startNewChat } = useChat();
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ChatHeader onNewChat={startNewChat} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
