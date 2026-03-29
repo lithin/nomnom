@@ -1,16 +1,17 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface ChatHeaderProps {
-    onNewChat: () => void;
+    onMenuPress: () => void;
 }
 
-export function ChatHeader({ onNewChat }: ChatHeaderProps) {
+export function ChatHeader({ onMenuPress }: ChatHeaderProps) {
     return (
         <View style={styles.header}>
-            <Text style={styles.title}>Chat</Text>
-            <TouchableOpacity onPress={onNewChat} style={styles.button}>
-                <Text style={styles.buttonText}>New Chat</Text>
+            <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
+                <Text style={styles.menuButtonText}>☰</Text>
             </TouchableOpacity>
+            <Text style={styles.title}>Chat</Text>
+            <View style={styles.placeholder} />
         </View>
     );
 }
@@ -26,20 +27,19 @@ const styles = StyleSheet.create({
         borderBottomColor: "#e0e0e0",
         backgroundColor: "#ffffff",
     },
+    menuButton: {
+        padding: 8,
+    },
+    menuButtonText: {
+        fontSize: 24,
+        color: "#333333",
+    },
     title: {
         fontSize: 18,
         fontWeight: "600",
         color: "#333333",
     },
-    button: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        backgroundColor: "#007aff",
-        borderRadius: 6,
-    },
-    buttonText: {
-        color: "#ffffff",
-        fontSize: 14,
-        fontWeight: "500",
+    placeholder: {
+        width: 40, // To balance the header layout with the menu button
     },
 });
