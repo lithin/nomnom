@@ -15,6 +15,10 @@
     "check": "npm run biome:check && npm run typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8"
+    "@biomejs/biome": "^2.4.8",
+    "prisma": "^7.6.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.6.0"
   }
 }
