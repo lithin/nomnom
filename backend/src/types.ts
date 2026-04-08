@@ -5,4 +5,5 @@ export type ChatMessage = {
 
 export type ChatRequestBody = {
   messages?: ChatMessage[];
+  editingRecipeId?: string;
 };

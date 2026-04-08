@@ -1,48 +1,71 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { ChatScreen } from "./src/chat/ChatScreen";
+import { RecipeDetailsScreen } from "./src/recipes/RecipeDetailsScreen";
+import { RecipesScreen } from "./src/recipes/RecipesScreen";
 
-import { ChatHeader } from "./src/chat/components/ChatHeader";
-import { ChatInput } from "./src/chat/components/ChatInput";
-import { DrawerMenu } from "./src/chat/components/DrawerMenu";
-import { MessageList } from "./src/chat/components/MessageList";
-import { useChat } from "./src/chat/useChat";
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function App() {
-  const { messages, input, isSending, setInput, handleSend, startNewChat } = useChat();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
+function RecipesStack() {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ChatHeader onMenuPress={() => setIsDrawerOpen(true)} />
-      <DrawerMenu
-        visible={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onNewChat={startNewChat}
+    <Stack.Navigator>
+      <Stack.Screen
+        name="RecipesList"
+        component={RecipesScreen}
+        options={{ title: "Recipes", headerTitleAlign: "center" }}
       />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <MessageList messages={messages} />
-        <ChatInput
-          value={input}
-          onChangeText={setInput}
-          isSending={isSending}
-          onSend={handleSend}
-        />
-      </KeyboardAvoidingView>
-      <StatusBar style="auto" />
-    </SafeAreaView>
+      <Stack.Screen
+        name="RecipeDetails"
+        component={RecipeDetailsScreen}
+        options={{ title: "Recipe Details", headerTitleAlign: "center" }}
+      />
+    </Stack.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  container: {
-    flex: 1,
-  },
-});
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName = "";
+
+            if (route.name === "Chat") {
+              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+            } else if (route.name === "Recipes") {
+              iconName = focused ? "restaurant" : "restaurant-outline";
+            }
+
+            // biome-ignore lint/suspicious/noExplicitAny: library typing requires it
+            return <Ionicons name={iconName as any} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: "#007aff",
+          tabBarInactiveTintColor: "gray",
+          headerTitleAlign: "center",
+        })}
+      >
+        <Tab.Screen name="Chat" component={ChatScreen} />
+        <Tab.Screen
+          name="Recipes"
+          component={RecipesStack}
+          options={{ headerShown: false }}
+          listeners={({ navigation }) => ({
+            tabPress: (event) => {
+              event.preventDefault();
+              navigation.navigate("Recipes", { screen: "RecipesList" });
+            },
+          })}
+        />
+      </Tab.Navigator>
+      <StatusBar style="auto" />
+    </NavigationContainer>
+  );
+}
+
+const _styles = StyleSheet.create({});

@@ -1,8 +1,23 @@
-import { useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import type { Message } from "../types";
+
+const MessageItem = memo(({ item }: { item: Message }) => (
+  <View
+    style={[
+      styles.messageBubble,
+      item.role === "user" ? styles.userBubble : styles.assistantBubble,
+    ]}
+  >
+    {item.role === "user" ? (
+      <Text style={styles.messageText}>{item.text}</Text>
+    ) : (
+      <Markdown style={markdownStyles}>{item.text}</Markdown>
+    )}
+  </View>
+));
 
 type MessageListProps = {
   messages: Message[];
@@ -22,26 +37,15 @@ export const MessageList = ({ messages }: MessageListProps) => {
     previousMessageCount.current = messages.length;
   }, [messages.length]);
 
+  const renderItem = useCallback(({ item }: { item: Message }) => <MessageItem item={item} />, []);
+
   return (
     <FlatList
       ref={listRef}
       data={messages}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.messagesContainer}
-      renderItem={({ item }) => (
-        <View
-          style={[
-            styles.messageBubble,
-            item.role === "user" ? styles.userBubble : styles.assistantBubble,
-          ]}
-        >
-          {item.role === "user" ? (
-            <Text style={styles.messageText}>{item.text}</Text>
-          ) : (
-            <Markdown style={markdownStyles}>{item.text}</Markdown>
-          )}
-        </View>
-      )}
+      renderItem={renderItem}
       ListEmptyComponent={
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>Ask me anything to start chatting.</Text>

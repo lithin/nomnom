@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 
 import type { Message } from "./types";
 
-const getBackendUrl = () => {
+export const getBackendUrl = () => {
   if (Platform.OS === "android") {
     return "http://10.0.2.2:8080";
   }
@@ -10,7 +10,7 @@ const getBackendUrl = () => {
   return "http://localhost:8080";
 };
 
-export const sendChatHistory = async (messages: Message[]) => {
+export const sendChatHistory = async (messages: Message[], editingRecipeId?: string) => {
   const response = await fetch(`${getBackendUrl()}/chat`, {
     method: "POST",
     headers: {
@@ -21,6 +21,7 @@ export const sendChatHistory = async (messages: Message[]) => {
         role: message.role,
         text: message.text,
       })),
+      editingRecipeId,
     }),
   });
 

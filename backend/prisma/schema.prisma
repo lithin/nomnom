@@ -16,6 +16,7 @@ datasource db {
 
 model Recipe {
   id        String                      @id @default(uuid())
+  title     String                      @default("Untitled")
   content   String
   embedding Unsupported("vector(768)")?
   createdAt DateTime                    @default(now())

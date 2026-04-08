@@ -9,6 +9,7 @@
     "biome:check": "biome check .",
     "biome:write": "biome check --write .",
     "build": "npm run -w backend build",
+    "docker:backend:push": "gcloud auth configure-docker us-west2-docker.pkg.dev && docker buildx build --platform linux/amd64 -t us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest --push ./backend",
     "dev": "npm run -w backend dev",
     "start": "npm run -w backend start",
     "typecheck": "npm run -w backend typecheck",
@@ -19,6 +20,7 @@
     "prisma": "^7.6.0"
   },
   "dependencies": {
-    "@prisma/client": "^7.6.0"
+    "@prisma/client": "^7.6.0",
+    "@react-navigation/native-stack": "^7.14.10"
   }
 }

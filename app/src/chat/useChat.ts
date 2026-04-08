@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { sendChatHistory } from "./api";
 import type { Message } from "./types";
 
-export const useChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?: string) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [editingRecipeId, setEditingRecipeId] = useState<string | undefined>(
+    initialEditingRecipeId,
+  );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -29,7 +32,7 @@ export const useChat = () => {
     setIsSending(true);
 
     try {
-      const reply = await sendChatHistory(nextMessages);
+      const reply = await sendChatHistory(nextMessages, editingRecipeId);
 
       setMessages((previous) => [
         ...previous,
@@ -57,9 +60,17 @@ export const useChat = () => {
 
   const startNewChat = () => {
     setMessages([]);
+    setEditingRecipeId(undefined);
     setInput("");
     setIsSending(false);
   };
+
+  const hydrateChat = useCallback((nextMessages: Message[], nextEditingRecipeId?: string) => {
+    setMessages(nextMessages);
+    setEditingRecipeId(nextEditingRecipeId);
+    setInput("");
+    setIsSending(false);
+  }, []);
 
   return {
     messages,
@@ -68,5 +79,6 @@ export const useChat = () => {
     setInput,
     handleSend,
     startNewChat,
+    hydrateChat,
   };
 };

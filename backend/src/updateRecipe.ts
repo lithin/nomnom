@@ -1,35 +1,45 @@
 import { type FunctionDeclaration, GoogleGenAI, Type } from "@google/genai";
 import { getPrisma } from "./db";
 
-export const saveRecipeDeclaration: FunctionDeclaration = {
-  name: "saveRecipe",
+export const updateRecipeDeclaration: FunctionDeclaration = {
+  name: "updateRecipe",
   parametersJsonSchema: {
     type: Type.OBJECT,
     properties: {
+      id: {
+        type: Type.STRING,
+        description: "The id of the recipe to update",
+      },
       recipe: {
         type: Type.STRING,
-        description:
-          "The recipe to save, as presented in the latest relevant message - without title.",
+        description: "The updated recipe to save.",
       },
       title: {
         type: Type.STRING,
-        description: "The title of the recipe to be saved. Keep it short and descriptive.",
+        description: "The updated title of the recipe.",
       },
     },
     required: ["recipe", "title"],
   },
 };
 
-export const saveRecipe = async ({ recipe, title }: { recipe: string; title: string }) => {
+export const updateRecipe = async ({
+  id,
+  recipe,
+  title,
+}: {
+  id: string;
+  recipe: string;
+  title: string;
+}) => {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY is not configured");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  // Generate an embedding for the recipe text
   const embeddingResponse = await ai.models.embedContent({
-    model: "gemini-embedding-001", // Standard Gemini embedding model available on v1beta
+    model: "gemini-embedding-001",
     contents: recipe,
     config: { outputDimensionality: 768 },
   });
@@ -38,7 +48,7 @@ export const saveRecipe = async ({ recipe, title }: { recipe: string; title: str
     throw new Error("Failed to generate embedding for the recipe");
   }
 
-  const embedding = embeddingResponse.embeddings[0].values;
+  const embedding = embeddingResponse.embeddings[0]?.values;
 
   if (!embedding || embedding.length === 0) {
     throw new Error("Failed to extract embedding values");
@@ -47,12 +57,18 @@ export const saveRecipe = async ({ recipe, title }: { recipe: string; title: str
   const embeddingString = `[${embedding.join(",")}]`;
 
   const prisma = getPrisma();
-  // Save the recipe and its embedding to the database using Prisma
-  const savedRecipe = await prisma.$queryRaw`
-    INSERT INTO "Recipe" (id, title, content, embedding, "createdAt")
-    VALUES (gen_random_uuid(), ${title}, ${recipe}, ${embeddingString}::vector, NOW())
-    RETURNING id;
+
+  const updatedRecipe = await prisma.$executeRaw`
+    UPDATE "Recipe"
+    SET title = ${title},
+        content = ${recipe},
+        embedding = ${embeddingString}::vector
+    WHERE id = ${id}
   `;
 
-  return savedRecipe;
+  if (updatedRecipe === 0) {
+    throw new Error(`Recipe not found for id: ${id}`);
+  }
+
+  return updatedRecipe;
 };
