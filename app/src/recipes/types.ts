@@ -3,4 +3,5 @@ export interface Recipe {
   title: string;
   content: string;
   createdAt: string;
+  chatSessionId?: string | null;
 }

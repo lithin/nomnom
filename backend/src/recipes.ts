@@ -14,6 +14,7 @@ export const setupRecipesEndpoint = (app: Router) => {
           title: true,
           content: true,
           createdAt: true,
+          chatSessionId: true,
         },
       });
       res.status(200).json({ recipes });

@@ -15,9 +15,39 @@ datasource db {
 }
 
 model Recipe {
-  id        String                      @id @default(uuid())
-  title     String                      @default("Untitled")
-  content   String
-  embedding Unsupported("vector(768)")?
-  createdAt DateTime                    @default(now())
+  id            String                      @id @default(uuid())
+  title         String                      @default("Untitled")
+  content       String
+  embedding     Unsupported("vector(768)")?
+  createdAt     DateTime                    @default(now())
+  chatSessionId String?
+  chatSession   ChatSession?                @relation(fields: [chatSessionId], references: [id], onDelete: SetNull)
+
+  @@index([chatSessionId])
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
+model ChatSession {
+  id        String        @id @default(uuid())
+  title     String        @default("New chat")
+  createdAt DateTime      @default(now())
+  messages  ChatMessage[]
+  recipes   Recipe[]
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  chatId    String
+  role      ChatRole
+  text      String
+  createdAt DateTime    @default(now())
+  session   ChatSession @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt(sort: Asc)])
 }

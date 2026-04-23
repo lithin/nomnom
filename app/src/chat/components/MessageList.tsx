@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useRef } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { memo, useRef } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import type { Message } from "../types";
@@ -24,39 +24,40 @@ type MessageListProps = {
 };
 
 export const MessageList = ({ messages }: MessageListProps) => {
-  const listRef = useRef<FlatList<Message>>(null);
-  const previousMessageCount = useRef(0);
-
-  useEffect(() => {
-    if (messages.length > previousMessageCount.current) {
-      requestAnimationFrame(() => {
-        listRef.current?.scrollToEnd({ animated: true });
-      });
-    }
-
-    previousMessageCount.current = messages.length;
-  }, [messages.length]);
-
-  const renderItem = useCallback(({ item }: { item: Message }) => <MessageItem item={item} />, []);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const didInitialScrollRef = useRef(false);
 
   return (
-    <FlatList
-      ref={listRef}
-      data={messages}
-      keyExtractor={(item) => item.id}
+    <ScrollView
+      ref={scrollViewRef}
+      style={styles.list}
       contentContainerStyle={styles.messagesContainer}
-      renderItem={renderItem}
-      ListEmptyComponent={
+      onContentSizeChange={() => {
+        if (!didInitialScrollRef.current) {
+          didInitialScrollRef.current = true;
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+          return;
+        }
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }}
+    >
+      {messages.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>Ask me anything to start chatting.</Text>
         </View>
-      }
-    />
+      ) : (
+        messages.map((item) => <MessageItem key={item.id} item={item} />)
+      )}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+  },
   messagesContainer: {
+    flexGrow: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
@@ -73,12 +74,12 @@ const styles = StyleSheet.create({
   },
   assistantBubble: {
     backgroundColor: "#e5e7eb",
-    alignSelf: "flex-start",
   },
   messageText: {
     color: "#111827",
     fontSize: 16,
     lineHeight: 22,
+    flexShrink: 1,
   },
   emptyState: {
     flex: 1,
@@ -96,6 +97,7 @@ const markdownStyles = StyleSheet.create({
     color: "#111827",
     fontSize: 16,
     lineHeight: 22,
+    flexShrink: 1,
   },
   paragraph: {
     marginTop: 0,

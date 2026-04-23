@@ -1,16 +1,41 @@
-import { Platform } from "react-native";
+import type { ChatHistoryItem, Message } from "./types";
 
-import type { Message } from "./types";
+const readJsonOrThrow = async <T>(response: Response, requestLabel: string): Promise<T> => {
+  const contentType = response.headers.get("content-type") ?? "";
+  const text = await response.text();
 
-export const getBackendUrl = () => {
-  if (Platform.OS === "android") {
-    return "http://10.0.2.2:8080";
+  if (!response.ok) {
+    throw new Error(
+      `${requestLabel} failed (${response.status}) from ${response.url}: ${text || "no response body"}`,
+    );
   }
 
-  return "http://localhost:8080";
+  if (!contentType.includes("application/json")) {
+    throw new Error(
+      `${requestLabel} returned non-JSON response from ${response.url} (content-type: ${contentType || "unknown"}): ${text.slice(0, 200)}`,
+    );
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(
+      `${requestLabel} returned invalid JSON from ${response.url}: ${text.slice(0, 200)}`,
+    );
+  }
 };
 
-export const sendChatHistory = async (messages: Message[], editingRecipeId?: string) => {
+export const getBackendUrl = () => {
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (!configuredUrl) {
+    throw new Error(
+      "Backend URL is not configured. Please set EXPO_PUBLIC_API_URL environment variable.",
+    );
+  }
+  return configuredUrl;
+};
+
+export const sendChatHistory = async (messages: Message[], chatId?: string) => {
   const response = await fetch(`${getBackendUrl()}/chat`, {
     method: "POST",
     headers: {
@@ -21,15 +46,54 @@ export const sendChatHistory = async (messages: Message[], editingRecipeId?: str
         role: message.role,
         text: message.text,
       })),
-      editingRecipeId,
+      chatId,
     }),
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(errorBody || "Failed to send chat message");
-  }
+  const body = await readJsonOrThrow<{ reply?: string; chatId?: string }>(
+    response,
+    "Send chat message",
+  );
 
-  const body = (await response.json()) as { reply?: string };
-  return body.reply?.trim() || "I could not generate a response.";
+  return {
+    reply: body.reply?.trim() || "I could not generate a response.",
+    chatId: body.chatId,
+  };
+};
+
+export const getChatsPage = async ({ limit, offset }: { limit: number; offset: number }) => {
+  const response = await fetch(`${getBackendUrl()}/chats?limit=${limit}&offset=${offset}`);
+
+  const body = await readJsonOrThrow<{
+    chats?: Array<{ id: string; title: string; createdAt: string }>;
+    totalCount?: number;
+    hasMore?: boolean;
+  }>(response, "Fetch chat history");
+
+  return {
+    chats: (body.chats ?? []) as ChatHistoryItem[],
+    totalCount: body.totalCount ?? 0,
+    hasMore: body.hasMore ?? false,
+  };
+};
+
+export const getChatMessages = async (chatId: string) => {
+  const response = await fetch(`${getBackendUrl()}/chats/${chatId}/messages`);
+
+  const body = await readJsonOrThrow<{
+    messages?: Array<{
+      id: string;
+      chatId: string;
+      role: "user" | "assistant";
+      text: string;
+      createdAt: string;
+    }>;
+  }>(response, "Fetch chat messages");
+
+  return (body.messages ?? []).map((message) => ({
+    id: message.id,
+    role: message.role,
+    text: message.text,
+    createdAt: message.createdAt,
+  }));
 };

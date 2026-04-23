@@ -20,7 +20,15 @@ export const saveRecipeDeclaration: FunctionDeclaration = {
   },
 };
 
-export const saveRecipe = async ({ recipe, title }: { recipe: string; title: string }) => {
+export const saveRecipe = async ({
+  recipe,
+  title,
+  chatId,
+}: {
+  recipe: string;
+  title: string;
+  chatId: string;
+}) => {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY is not configured");
   }
@@ -47,11 +55,21 @@ export const saveRecipe = async ({ recipe, title }: { recipe: string; title: str
   const embeddingString = `[${embedding.join(",")}]`;
 
   const prisma = getPrisma();
-  // Save the recipe and its embedding to the database using Prisma
-  const savedRecipe = await prisma.$queryRaw`
-    INSERT INTO "Recipe" (id, title, content, embedding, "createdAt")
-    VALUES (gen_random_uuid(), ${title}, ${recipe}, ${embeddingString}::vector, NOW())
-    RETURNING id;
+  const savedRecipe = await prisma.recipe.create({
+    data: {
+      title,
+      content: recipe,
+      chatSessionId: chatId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  await prisma.$executeRaw`
+    UPDATE "Recipe"
+    SET embedding = ${embeddingString}::vector
+    WHERE id = ${savedRecipe.id}
   `;
 
   return savedRecipe;

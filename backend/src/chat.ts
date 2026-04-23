@@ -1,5 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Request, Response, Router } from "express";
+import {
+  appendChatMessages,
+  buildChatTitleFromFirstMessage,
+  createChatSession,
+  updateChatTitle,
+} from "./chatHistory";
 import { saveRecipe, saveRecipeDeclaration } from "./save";
 import type { ChatRequestBody } from "./types";
 import { updateRecipe, updateRecipeDeclaration } from "./updateRecipe";
@@ -8,7 +14,7 @@ import { getErrorMessage } from "./utils";
 export const setupChatEndpoint = (app: Router) => {
   app.post("/chat", async (_req: Request, res: Response) => {
     const body = _req.body as ChatRequestBody;
-    const { messages, editingRecipeId } = body;
+    const { messages, chatId: incomingChatId } = body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -37,6 +43,25 @@ export const setupChatEndpoint = (app: Router) => {
     }
 
     try {
+      const latestMessageTimestamp = new Date();
+      let chatId = incomingChatId;
+      let isNewChat = false;
+
+      if (!chatId) {
+        const createdSession = await createChatSession();
+        chatId = createdSession.id;
+        isNewChat = true;
+      }
+
+      await appendChatMessages([
+        {
+          chatId,
+          role: "user",
+          text: latestText,
+          createdAt: latestMessageTimestamp,
+        },
+      ]);
+
       const ai = new GoogleGenAI({ apiKey });
       const modelName = "gemini-2.5-flash";
 
@@ -68,7 +93,7 @@ export const setupChatEndpoint = (app: Router) => {
         for (const call of response.functionCalls) {
           if (call.name === "saveRecipe") {
             const args = call.args as unknown as { recipe: string; title: string };
-            await saveRecipe(args);
+            await saveRecipe({ ...args, chatId });
 
             functionResponseParts.push({
               functionResponse: {
@@ -84,13 +109,9 @@ export const setupChatEndpoint = (app: Router) => {
               title: string;
             };
 
-            const resolvedId = args.id ?? editingRecipeId;
-            if (!resolvedId) {
-              throw new Error("Missing recipe id for updateRecipe");
-            }
-
             await updateRecipe({
-              id: resolvedId,
+              id: args.id,
+              chatId,
               recipe: args.recipe,
               title: args.title,
             });
@@ -113,11 +134,26 @@ export const setupChatEndpoint = (app: Router) => {
       if (!response.text) {
         console.error("Could not generate response:", response);
         res.status(200).json({ reply: "could not generate response", model: modelName });
+        return;
       }
 
       const reply = response.text;
 
-      res.status(200).json({ reply, model: modelName });
+      await appendChatMessages([
+        {
+          chatId,
+          role: "assistant",
+          text: reply,
+          createdAt: new Date(),
+        },
+      ]);
+
+      if (isNewChat) {
+        const title = buildChatTitleFromFirstMessage(latestText);
+        await updateChatTitle({ chatId, title });
+      }
+
+      res.status(200).json({ reply, model: modelName, chatId });
     } catch (error) {
       const message = getErrorMessage(error);
       console.error("Chat endpoint error:", message, error);

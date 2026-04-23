@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "NomNom",
+    "slug": "nomnom",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/app-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -15,16 +15,24 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.lithin.nomnom",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/app-logo.png",
+        "backgroundImage": "./assets/app-logo.png",
+        "monochromeImage": "./assets/app-logo.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/app-logo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "90481f93-c962-4263-a031-42dd9f8bae3d"
+      }
+    },
+    "owner": "lithin"
   }
 }

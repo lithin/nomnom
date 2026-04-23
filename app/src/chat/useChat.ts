@@ -3,11 +3,9 @@ import { useCallback, useState } from "react";
 import { sendChatHistory } from "./api";
 import type { Message } from "./types";
 
-export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?: string) => {
+export const useChat = (initialMessages: Message[] = [], initialChatId?: string) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [editingRecipeId, setEditingRecipeId] = useState<string | undefined>(
-    initialEditingRecipeId,
-  );
+  const [chatId, setChatId] = useState<string | undefined>(initialChatId);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -24,6 +22,7 @@ export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?
         id: `${Date.now()}-user`,
         role: "user",
         text: trimmedInput,
+        createdAt: new Date().toISOString(),
       },
     ];
 
@@ -32,14 +31,19 @@ export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?
     setIsSending(true);
 
     try {
-      const reply = await sendChatHistory(nextMessages, editingRecipeId);
+      const result = await sendChatHistory(nextMessages, chatId);
+
+      if (result.chatId) {
+        setChatId(result.chatId);
+      }
 
       setMessages((previous) => [
         ...previous,
         {
           id: `${Date.now()}-assistant`,
           role: "assistant",
-          text: reply,
+          text: result.reply,
+          createdAt: new Date().toISOString(),
         },
       ]);
     } catch (error) {
@@ -51,6 +55,7 @@ export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?
           id: `${Date.now()}-assistant-error`,
           role: "assistant",
           text: `Error: ${errorText}`,
+          createdAt: new Date().toISOString(),
         },
       ]);
     } finally {
@@ -60,20 +65,21 @@ export const useChat = (initialMessages: Message[] = [], initialEditingRecipeId?
 
   const startNewChat = () => {
     setMessages([]);
-    setEditingRecipeId(undefined);
+    setChatId(undefined);
     setInput("");
     setIsSending(false);
   };
 
-  const hydrateChat = useCallback((nextMessages: Message[], nextEditingRecipeId?: string) => {
+  const hydrateChat = useCallback((nextMessages: Message[], nextChatId?: string) => {
     setMessages(nextMessages);
-    setEditingRecipeId(nextEditingRecipeId);
+    setChatId(nextChatId);
     setInput("");
     setIsSending(false);
   }, []);
 
   return {
     messages,
+    chatId,
     input,
     isSending,
     setInput,

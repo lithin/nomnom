@@ -15,18 +15,30 @@ export function RecipeDetailsScreen() {
   if (!recipe) return null;
 
   const handleEdit = () => {
+    if (!recipe.chatSessionId) {
+      Alert.alert(
+        "Cannot Edit In Chat",
+        "This recipe is not linked to a chat yet, so chat-based editing is unavailable.",
+      );
+      return;
+    }
+
+    const now = new Date().toISOString();
+
     navigation.getParent()?.navigate("Chat", {
-      editingRecipeId: recipe.id,
+      chatId: recipe.chatSessionId,
       initialMessages: [
         {
           id: `edit-init-1`,
           role: "user",
           text: `I want to update the recipe "${recipe.title}". Let's start with what we have. Please provide the current recipe and I will tell you what to change.`,
+          createdAt: now,
         },
         {
           id: `edit-init-2`,
           role: "assistant",
           text: `Sure. Here is the current recipe for "${recipe.title}":\n\n${recipe.content}\n\nWhat would you like me to update?`,
+          createdAt: now,
         },
       ],
     });

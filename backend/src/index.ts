@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import dotenv from "dotenv";
 import express from "express";
 import { setupChatEndpoint } from "./chat";
+import { setupChatsEndpoint } from "./chats";
 import { setupHealthEndpoint } from "./health";
 import { setupRecipesEndpoint } from "./recipes";
 
@@ -23,6 +24,7 @@ app.use(express.json());
 
 setupHealthEndpoint(app);
 setupChatEndpoint(app);
+setupChatsEndpoint(app);
 setupRecipesEndpoint(app);
 
 app.listen(port, () => {

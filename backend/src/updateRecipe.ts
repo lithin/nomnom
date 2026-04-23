@@ -25,10 +25,12 @@ export const updateRecipeDeclaration: FunctionDeclaration = {
 
 export const updateRecipe = async ({
   id,
+  chatId,
   recipe,
   title,
 }: {
-  id: string;
+  id?: string;
+  chatId: string;
   recipe: string;
   title: string;
 }) => {
@@ -57,17 +59,31 @@ export const updateRecipe = async ({
   const embeddingString = `[${embedding.join(",")}]`;
 
   const prisma = getPrisma();
+  const resolvedRecipe = id
+    ? await prisma.recipe.findUnique({
+        where: { id },
+        select: { id: true },
+      })
+    : await prisma.recipe.findFirst({
+        where: { chatSessionId: chatId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+
+  if (!resolvedRecipe) {
+    throw new Error(`Recipe not found for chat id: ${chatId}`);
+  }
 
   const updatedRecipe = await prisma.$executeRaw`
     UPDATE "Recipe"
     SET title = ${title},
         content = ${recipe},
         embedding = ${embeddingString}::vector
-    WHERE id = ${id}
+    WHERE id = ${resolvedRecipe.id}
   `;
 
   if (updatedRecipe === 0) {
-    throw new Error(`Recipe not found for id: ${id}`);
+    throw new Error(`Recipe not found for id: ${resolvedRecipe.id}`);
   }
 
   return updatedRecipe;
