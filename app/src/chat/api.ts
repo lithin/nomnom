@@ -1,3 +1,4 @@
+import { getBackendHeaders, getBackendUrl } from "../backend/apiConfig";
 import type { ChatHistoryItem, Message } from "./types";
 
 const readJsonOrThrow = async <T>(response: Response, requestLabel: string): Promise<T> => {
@@ -25,22 +26,10 @@ const readJsonOrThrow = async <T>(response: Response, requestLabel: string): Pro
   }
 };
 
-export const getBackendUrl = () => {
-  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (!configuredUrl) {
-    throw new Error(
-      "Backend URL is not configured. Please set EXPO_PUBLIC_API_URL environment variable.",
-    );
-  }
-  return configuredUrl;
-};
-
 export const sendChatHistory = async (messages: Message[], chatId?: string) => {
   const response = await fetch(`${getBackendUrl()}/chat`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getBackendHeaders(),
     body: JSON.stringify({
       messages: messages.map((message) => ({
         role: message.role,
@@ -62,7 +51,9 @@ export const sendChatHistory = async (messages: Message[], chatId?: string) => {
 };
 
 export const getChatsPage = async ({ limit, offset }: { limit: number; offset: number }) => {
-  const response = await fetch(`${getBackendUrl()}/chats?limit=${limit}&offset=${offset}`);
+  const response = await fetch(`${getBackendUrl()}/chats?limit=${limit}&offset=${offset}`, {
+    headers: getBackendHeaders(),
+  });
 
   const body = await readJsonOrThrow<{
     chats?: Array<{ id: string; title: string; createdAt: string }>;
@@ -78,7 +69,9 @@ export const getChatsPage = async ({ limit, offset }: { limit: number; offset: n
 };
 
 export const getChatMessages = async (chatId: string) => {
-  const response = await fetch(`${getBackendUrl()}/chats/${chatId}/messages`);
+  const response = await fetch(`${getBackendUrl()}/chats/${chatId}/messages`, {
+    headers: getBackendHeaders(),
+  });
 
   const body = await readJsonOrThrow<{
     messages?: Array<{

@@ -85,6 +85,16 @@ resource "google_cloud_run_v2_service" "backend" {
           }
         }
       }
+
+      env {
+        name = "BACKEND_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "nomnom-backend-api-key"
+            version = "latest"
+          }
+        }
+      }
     }
   }
 
@@ -97,6 +107,7 @@ resource "google_cloud_run_v2_service" "backend" {
     google_project_service.required_apis,
     google_secret_manager_secret_iam_member.database_url_access,
     google_secret_manager_secret_iam_member.gemini_api_key_access,
+    google_secret_manager_secret_iam_member.backend_api_key_access,
   ]
 }
 
@@ -112,6 +123,15 @@ resource "google_secret_manager_secret_iam_member" "database_url_access" {
 resource "google_secret_manager_secret_iam_member" "gemini_api_key_access" {
   project   = var.project_id
   secret_id = "projects/${var.project_id}/secrets/nomnom-gemini-api-key"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.service_account}"
+
+  depends_on = [google_project_service.required_apis]
+}
+
+resource "google_secret_manager_secret_iam_member" "backend_api_key_access" {
+  project   = var.project_id
+  secret_id = "projects/${var.project_id}/secrets/nomnom-backend-api-key"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.service_account}"
 

@@ -1,5 +1,5 @@
 import { type FunctionDeclaration, GoogleGenAI, Type } from "@google/genai";
-import { getPrisma } from "./db";
+import { createRecipeWithEmbedding } from "./createRecipe";
 
 export const saveRecipeDeclaration: FunctionDeclaration = {
   name: "saveRecipe",
@@ -54,23 +54,10 @@ export const saveRecipe = async ({
 
   const embeddingString = `[${embedding.join(",")}]`;
 
-  const prisma = getPrisma();
-  const savedRecipe = await prisma.recipe.create({
-    data: {
-      title,
-      content: recipe,
-      chatSessionId: chatId,
-    },
-    select: {
-      id: true,
-    },
+  return createRecipeWithEmbedding({
+    title,
+    recipe,
+    chatId,
+    embeddingString,
   });
-
-  await prisma.$executeRaw`
-    UPDATE "Recipe"
-    SET embedding = ${embeddingString}::vector
-    WHERE id = ${savedRecipe.id}
-  `;
-
-  return savedRecipe;
 };

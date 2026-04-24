@@ -1,12 +1,10 @@
-import { getBackendUrl } from "../chat/api";
+import { getBackendHeaders, getBackendUrl } from "../backend/apiConfig";
 import type { Recipe } from "./types";
 
 export const fetchRecipes = async (): Promise<Recipe[]> => {
   const response = await fetch(`${getBackendUrl()}/recipes`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getBackendHeaders(),
   });
 
   if (!response.ok) {
@@ -20,9 +18,7 @@ export const fetchRecipes = async (): Promise<Recipe[]> => {
 export const deleteRecipe = async (id: string): Promise<void> => {
   const response = await fetch(`${getBackendUrl()}/recipes/${id}`, {
     method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getBackendHeaders(),
   });
 
   if (!response.ok) {

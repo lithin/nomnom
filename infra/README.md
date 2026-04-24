@@ -16,16 +16,29 @@ This Terraform stack deploys the backend to Cloud Run and injects production sec
 - Secret Manager secrets:
   - `nomnom-database-url-prod` (Neon production DB URL)
   - `nomnom-gemini-api-key`
+  - `nomnom-backend-api-key` (request auth key between app and backend, auto-created by deploy script if missing)
 
-## Backend build and push
+## Backend deploy (build, secret handling, Terraform apply)
 
 From repo root:
 
 ```bash
-gcloud auth configure-docker us-west2-docker.pkg.dev
+npm run deploy:backend
+```
 
-docker build -t us-west2-docker.pkg.dev/<PROJECT_ID>/nomnom/backend:latest ./backend
-docker push us-west2-docker.pkg.dev/<PROJECT_ID>/nomnom/backend:latest
+The script `infra/deploy_backend.sh` does all of the following:
+
+- Builds and pushes the backend image from `infra/terraform.tfvars` `container_image`
+- Reuses `nomnom-backend-api-key` if it already exists
+- Creates `nomnom-backend-api-key` and generates a key if it does not exist
+- Runs `terraform init` and `terraform apply`
+
+## Manual backend build and push
+
+From repo root:
+
+```bash
+npm run docker:backend:push
 ```
 
 ## Terraform deploy
@@ -48,14 +61,26 @@ Use separate Neon branches/databases and map them to backend envs:
 - Local development: set `DATABASE_URL` in `backend/.env` (point it to Neon dev DB)
 - Cloud Run production: set `DATABASE_URL` in Secret Manager (point it to Neon prod DB)
 
-The backend uses only `DATABASE_URL`.
+Backend runtime env vars are `DATABASE_URL`, `GEMINI_API_KEY`, and `BACKEND_API_KEY`.
 
 ## Current mapping
 
-- `backend/.env` -> `DATABASE_URL` -> Neon `development` branch database `nomnom_dev`
+- `backend/.env` -> `DATABASE_URL`, `GEMINI_API_KEY`, `BACKEND_API_KEY` -> local backend runtime
 - Cloud Run env var `DATABASE_URL` -> Secret Manager secret `nomnom-database-url-prod` -> Neon `production` branch database `nomnom_prod`
+- Cloud Run env var `GEMINI_API_KEY` -> Secret Manager secret `nomnom-gemini-api-key`
+- Cloud Run env var `BACKEND_API_KEY` -> Secret Manager secret `nomnom-backend-api-key`
 
 Secret names are hardcoded in `main.tf` for this project:
 
 - `nomnom-database-url-prod`
 - `nomnom-gemini-api-key`
+- `nomnom-backend-api-key`
+
+## App environment
+
+The app must include these environment variables:
+
+- `EXPO_PUBLIC_API_URL`
+- `EXPO_PUBLIC_BACKEND_API_KEY`
+
+All app backend requests send `x-api-key` using `EXPO_PUBLIC_BACKEND_API_KEY`.

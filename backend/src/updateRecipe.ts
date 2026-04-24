@@ -1,4 +1,5 @@
 import { type FunctionDeclaration, GoogleGenAI, Type } from "@google/genai";
+import { createRecipeWithEmbedding } from "./createRecipe";
 import { getPrisma } from "./db";
 
 export const updateRecipeDeclaration: FunctionDeclaration = {
@@ -59,6 +60,7 @@ export const updateRecipe = async ({
   const embeddingString = `[${embedding.join(",")}]`;
 
   const prisma = getPrisma();
+
   const resolvedRecipe = id
     ? await prisma.recipe.findUnique({
         where: { id },
@@ -71,7 +73,13 @@ export const updateRecipe = async ({
       });
 
   if (!resolvedRecipe) {
-    throw new Error(`Recipe not found for chat id: ${chatId}`);
+    await createRecipeWithEmbedding({
+      title,
+      recipe,
+      chatId,
+      embeddingString,
+    });
+    return 1;
   }
 
   const updatedRecipe = await prisma.$executeRaw`
@@ -83,7 +91,13 @@ export const updateRecipe = async ({
   `;
 
   if (updatedRecipe === 0) {
-    throw new Error(`Recipe not found for id: ${resolvedRecipe.id}`);
+    await createRecipeWithEmbedding({
+      title,
+      recipe,
+      chatId,
+      embeddingString,
+    });
+    return 1;
   }
 
   return updatedRecipe;
