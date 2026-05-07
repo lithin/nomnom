@@ -1,95 +1,59 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from "react-native";
-import { ChatHistoryDrawer } from "./components/ChatHistoryDrawer";
+import { useEffect, useState } from "react";
+import { KeyboardAvoidingView, StyleSheet, View } from "react-native";
 import { ChatInput } from "./components/ChatInput";
 import { MessageList } from "./components/MessageList";
 import type { Message } from "./types";
-import { useChat } from "./useChat";
 
-export function ChatScreen() {
-  // biome-ignore lint/suspicious/noExplicitAny: route params are dynamic across navigators
-  const route = useRoute<any>();
-  const initialMessages = route.params?.initialMessages as Message[] | undefined;
-  const initialChatId = route.params?.chatId as string | undefined;
+type ChatScreenProps = {
+  activeChatId?: string;
+  messages: Message[];
+  input: string;
+  isSending: boolean;
+  onChangeInput: (value: string) => void;
+  onSend: () => void;
+};
 
-  const { messages, input, isSending, setInput, handleSend, startNewChat, hydrateChat } = useChat(
-    initialMessages,
-    initialChatId,
-  );
-  const navigation = useNavigation();
+export function ChatScreen({
+  activeChatId,
+  messages,
+  input,
+  isSending,
+  onChangeInput,
+  onSend,
+}: ChatScreenProps) {
   const headerHeight = useHeaderHeight();
-  const [isHistoryVisible, setHistoryVisible] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
-  const openHistory = useCallback(() => {
-    setHistoryVisible(true);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onMount
+  useEffect(() => {
+    // header height is correct for keyboard avoiding view only at first load
+    setKeyboardOffset(headerHeight);
   }, []);
 
-  const selectChat = useCallback(
-    (persistedMessages: Message[], chatId: string) => {
-      hydrateChat(persistedMessages, chatId);
-      setHistoryVisible(false);
-    },
-    [hydrateChat],
-  );
-
-  const handleStartNewFromDrawer = useCallback(() => {
-    startNewChat();
-    setHistoryVisible(false);
-  }, [startNewChat]);
-
-  useEffect(() => {
-    if (initialMessages && initialMessages.length > 0) {
-      hydrateChat(initialMessages, initialChatId);
-    }
-  }, [initialMessages, initialChatId, hydrateChat]);
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={openHistory} style={styles.headerButtonLeft}>
-          <Ionicons name="menu" size={24} color="#0f766e" />
-        </TouchableOpacity>
-      ),
-      headerRight: undefined,
-    });
-  }, [navigation, openHistory]);
-
   return (
-    <>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={headerHeight}
+        behavior="padding"
+        keyboardVerticalOffset={keyboardOffset}
       >
-        <MessageList messages={messages} />
+        <MessageList key={activeChatId ?? "new-chat"} messages={messages} />
         <ChatInput
           value={input}
-          onChangeText={setInput}
+          onChangeText={onChangeInput}
           isSending={isSending}
-          onSend={handleSend}
+          onSend={onSend}
         />
         <StatusBar style="auto" />
       </KeyboardAvoidingView>
-
-      <ChatHistoryDrawer
-        visible={isHistoryVisible}
-        onClose={() => setHistoryVisible(false)}
-        onSelectChat={selectChat}
-        onStartNewChat={handleStartNewFromDrawer}
-      />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerButtonLeft: {
-    marginLeft: 12,
   },
 });

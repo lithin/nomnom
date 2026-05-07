@@ -16,6 +16,7 @@ require_cmd gcloud
 require_cmd terraform
 require_cmd docker
 require_cmd openssl
+require_cmd npm
 
 if [[ ! -f "${TFVARS_FILE}" ]]; then
   echo "Missing ${TFVARS_FILE}. Copy terraform.tfvars.example and fill required values." >&2
@@ -33,6 +34,7 @@ PROJECT_ID="$(extract_tfvar project_id)"
 REGION="$(extract_tfvar region)"
 CONTAINER_IMAGE="$(extract_tfvar container_image)"
 BACKEND_API_KEY_SECRET_NAME="nomnom-backend-api-key"
+DATABASE_URL_SECRET_NAME="nomnom-database-url-prod"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "project_id must be set in ${TFVARS_FILE}" >&2
@@ -50,6 +52,13 @@ fi
 
 echo "Configuring Docker auth for Artifact Registry (${REGION})..."
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+echo "Applying Prisma migrations to production database..."
+DATABASE_URL="$(gcloud secrets versions access latest --secret="${DATABASE_URL_SECRET_NAME}" --project "${PROJECT_ID}")"
+(
+  cd "${REPO_ROOT}/backend"
+  DATABASE_URL="${DATABASE_URL}" npm run migrate:deploy
+)
 
 echo "Building and pushing backend image: ${CONTAINER_IMAGE}"
 docker buildx build --platform linux/amd64 -t "${CONTAINER_IMAGE}" --push "${REPO_ROOT}/backend"

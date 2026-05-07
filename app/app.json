@@ -3,6 +3,7 @@
     "name": "NomNom",
     "slug": "nomnom",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "light",

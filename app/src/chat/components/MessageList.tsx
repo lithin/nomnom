@@ -1,4 +1,4 @@
-import { memo, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -26,6 +26,16 @@ type MessageListProps = {
 export const MessageList = ({ messages }: MessageListProps) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const didInitialScrollRef = useRef(false);
+  const scrollDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (scrollDebounceTimeoutRef.current) {
+        clearTimeout(scrollDebounceTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <ScrollView
@@ -33,12 +43,19 @@ export const MessageList = ({ messages }: MessageListProps) => {
       style={styles.list}
       contentContainerStyle={styles.messagesContainer}
       onContentSizeChange={() => {
-        if (!didInitialScrollRef.current) {
-          didInitialScrollRef.current = true;
-          scrollViewRef.current?.scrollToEnd({ animated: false });
-          return;
+        if (scrollDebounceTimeoutRef.current) {
+          clearTimeout(scrollDebounceTimeoutRef.current);
         }
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+
+        scrollDebounceTimeoutRef.current = setTimeout(() => {
+          if (!didInitialScrollRef.current) {
+            didInitialScrollRef.current = true;
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+            return;
+          }
+
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }}
     >
       {messages.length === 0 ? (
@@ -54,10 +71,10 @@ export const MessageList = ({ messages }: MessageListProps) => {
 
 const styles = StyleSheet.create({
   list: {
-    flex: 1,
+    // flex: 1,
   },
   messagesContainer: {
-    flexGrow: 1,
+    // flexGrow: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,

@@ -1,8 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { PlatformPressable } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
-import { deleteRecipe } from "./api";
+import { deleteRecipe, ensureRecipeChatSession } from "./api";
 import type { Recipe } from "./types";
 
 export function RecipeDetailsScreen() {
@@ -11,40 +13,51 @@ export function RecipeDetailsScreen() {
   // biome-ignore lint/suspicious/noExplicitAny: needed for navigation typing
   const navigation = useNavigation<any>();
   const recipe: Recipe = (route.params as { recipe: Recipe })?.recipe;
+  const [chatSessionId, setChatSessionId] = useState<string | null>(recipe?.chatSessionId ?? null);
+  const [isPreparingEditChat, setPreparingEditChat] = useState(false);
 
-  if (!recipe) return null;
+  useEffect(() => {
+    setChatSessionId(recipe?.chatSessionId ?? null);
+  }, [recipe?.chatSessionId]);
 
-  const handleEdit = () => {
-    if (!recipe.chatSessionId) {
-      Alert.alert(
-        "Cannot Edit In Chat",
-        "This recipe is not linked to a chat yet, so chat-based editing is unavailable.",
-      );
+  const handleEdit = useCallback(() => {
+    if (!recipe || isPreparingEditChat) {
       return;
     }
 
-    const now = new Date().toISOString();
+    const openEditChat = async () => {
+      try {
+        setPreparingEditChat(true);
 
-    navigation.getParent()?.navigate("Chat", {
-      chatId: recipe.chatSessionId,
-      initialMessages: [
-        {
-          id: `edit-init-1`,
-          role: "user",
-          text: `I want to update the recipe "${recipe.title}". Let's start with what we have. Please provide the current recipe and I will tell you what to change.`,
-          createdAt: now,
-        },
-        {
-          id: `edit-init-2`,
-          role: "assistant",
-          text: `Sure. Here is the current recipe for "${recipe.title}":\n\n${recipe.content}\n\nWhat would you like me to update?`,
-          createdAt: now,
-        },
-      ],
-    });
-  };
+        const resolvedChatSessionId = chatSessionId ?? (await ensureRecipeChatSession(recipe.id));
 
-  const handleDelete = () => {
+        setChatSessionId(resolvedChatSessionId);
+
+        navigation.getParent()?.navigate("Chat", {
+          screen: "ChatMain",
+          params: {
+            chatId: resolvedChatSessionId,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to prepare recipe edit chat", error);
+        Alert.alert(
+          "Unable To Start Editing",
+          "We couldn't prepare a chat for this recipe. Please try again.",
+        );
+      } finally {
+        setPreparingEditChat(false);
+      }
+    };
+
+    void openEditChat();
+  }, [navigation, recipe, chatSessionId, isPreparingEditChat]);
+
+  const handleDelete = useCallback(() => {
+    if (!recipe) {
+      return;
+    }
+
     Alert.alert("Delete Recipe", "Are you sure you want to delete this recipe?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -61,20 +74,34 @@ export function RecipeDetailsScreen() {
         },
       },
     ]);
-  };
+  }, [navigation, recipe]);
+
+  useLayoutEffect(() => {
+    if (!recipe) {
+      navigation.setOptions({ headerRight: undefined });
+      return;
+    }
+
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerActions}>
+          <PlatformPressable onPress={handleEdit} style={styles.headerIconButton}>
+            <Ionicons name="create-outline" size={22} color="#007aff" />
+          </PlatformPressable>
+          <PlatformPressable onPress={handleDelete} style={styles.headerIconButton}>
+            <Ionicons name="trash-outline" size={22} color="#ff3b30" />
+          </PlatformPressable>
+        </View>
+      ),
+    });
+  }, [navigation, handleDelete, handleEdit, recipe]);
+
+  if (!recipe) return null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.title}>{recipe.title}</Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity onPress={handleEdit} style={styles.iconButton}>
-            <Ionicons name="create-outline" size={24} color="#007aff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-            <Ionicons name="trash-outline" size={24} color="#ff3b30" />
-          </TouchableOpacity>
-        </View>
       </View>
       <Text style={styles.date}>{new Date(recipe.createdAt).toLocaleDateString()}</Text>
       <View style={styles.markdownContainer}>
@@ -103,19 +130,20 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     flex: 1,
-    marginRight: 16,
-  },
-  actionButtons: {
-    flexDirection: "row",
+    marginRight: 8,
   },
   date: {
     fontSize: 14,
     color: "#888",
     marginBottom: 16,
   },
-  iconButton: {
-    padding: 4,
-    marginLeft: 16,
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  headerIconButton: {
+    paddingVertical: 2,
   },
   markdownContainer: {
     marginTop: 8,
