@@ -14,11 +14,7 @@ const Stack = createNativeStackNavigator();
 function RecipesStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="RecipesList"
-        component={RecipesScreen}
-        options={{ title: "Recipes" }}
-      />
+      <Stack.Screen name="RecipesList" component={RecipesScreen} options={{ title: "Recipes" }} />
       <Stack.Screen
         name="RecipeDetails"
         component={RecipeDetailsScreen}

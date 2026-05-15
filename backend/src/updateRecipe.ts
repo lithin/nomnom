@@ -1,28 +1,6 @@
-import { type FunctionDeclaration, GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { createRecipeWithEmbedding } from "./createRecipe";
 import { getPrisma } from "./db";
-
-export const updateRecipeDeclaration: FunctionDeclaration = {
-  name: "updateRecipe",
-  parametersJsonSchema: {
-    type: Type.OBJECT,
-    properties: {
-      id: {
-        type: Type.STRING,
-        description: "The id of the recipe to update",
-      },
-      recipe: {
-        type: Type.STRING,
-        description: "The updated recipe to save.",
-      },
-      title: {
-        type: Type.STRING,
-        description: "The updated title of the recipe.",
-      },
-    },
-    required: ["recipe", "title"],
-  },
-};
 
 export const updateRecipe = async ({
   id,

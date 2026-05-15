@@ -1,24 +1,5 @@
-import { type FunctionDeclaration, GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { createRecipeWithEmbedding } from "./createRecipe";
-
-export const saveRecipeDeclaration: FunctionDeclaration = {
-  name: "saveRecipe",
-  parametersJsonSchema: {
-    type: Type.OBJECT,
-    properties: {
-      recipe: {
-        type: Type.STRING,
-        description:
-          "The recipe to save, as presented in the latest relevant message - without title.",
-      },
-      title: {
-        type: Type.STRING,
-        description: "The title of the recipe to be saved. Keep it short and descriptive.",
-      },
-    },
-    required: ["recipe", "title"],
-  },
-};
 
 export const saveRecipe = async ({
   recipe,
