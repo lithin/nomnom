@@ -61,7 +61,7 @@ DATABASE_URL="$(gcloud secrets versions access latest --secret="${DATABASE_URL_S
 )
 
 echo "Building and pushing backend image: ${CONTAINER_IMAGE}"
-docker buildx build --platform linux/amd64 -t "${CONTAINER_IMAGE}" --push "${REPO_ROOT}/backend"
+docker buildx build --platform linux/amd64 -t "${CONTAINER_IMAGE}" --push -f "${REPO_ROOT}/backend/Dockerfile" "${REPO_ROOT}"
 
 echo "Ensuring backend API key secret exists in Secret Manager..."
 if gcloud secrets describe "${BACKEND_API_KEY_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null 2>&1; then

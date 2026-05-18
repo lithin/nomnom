@@ -11,7 +11,7 @@
     "build": "npm run -w backend build",
     "deploy:dev": "npm run -w backend migrate:dev",
     "deploy:backend": "bash ./infra/deploy_backend.sh",
-    "docker:backend:push": "gcloud auth configure-docker us-west2-docker.pkg.dev && docker buildx build --platform linux/amd64 -t us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest --push ./backend",
+    "docker:backend:push": "gcloud auth configure-docker us-west2-docker.pkg.dev && docker buildx build --platform linux/amd64 -t us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest --push -f ./backend/Dockerfile .",
     "dev": "npm run -w backend dev",
     "start": "npm run -w backend start",
     "typecheck": "npm run -w backend typecheck",
