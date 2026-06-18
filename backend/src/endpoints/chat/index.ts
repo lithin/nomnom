@@ -1,5 +1,6 @@
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { Request, Response, Router } from "express";
+import { getErrorMessage } from "../../shared/utils";
 import { createChatAgent, MODEL_NAME } from "./agent";
 import {
   appendChatMessages,
@@ -8,7 +9,6 @@ import {
   updateChatTitle,
 } from "./chatHistory";
 import type { ChatRequestBody } from "./types";
-import { getErrorMessage } from "./utils";
 
 const extractReplyText = (content: unknown): string | null => {
   if (typeof content === "string") {

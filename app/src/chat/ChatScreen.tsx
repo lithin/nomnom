@@ -2,6 +2,8 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, StyleSheet, View } from "react-native";
+import { useTheme } from "tamagui/native";
+
 import { ChatInput } from "./components/ChatInput";
 import { MessageList } from "./components/MessageList";
 import type { Message } from "./types";
@@ -24,6 +26,7 @@ export function ChatScreen({
   onSend,
 }: ChatScreenProps) {
   const headerHeight = useHeaderHeight();
+  const theme = useTheme();
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: onMount
@@ -33,9 +36,9 @@ export function ChatScreen({
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.val as string }]}>
       <KeyboardAvoidingView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background.val as string }]}
         behavior="padding"
         keyboardVerticalOffset={keyboardOffset}
       >

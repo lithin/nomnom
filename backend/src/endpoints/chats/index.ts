@@ -1,5 +1,5 @@
 import type { Request, Response, Router } from "express";
-import { getChatMessages, listChatSessions } from "./chatHistory";
+import { getChatMessages, listChatSessions } from "../chat/chatHistory";
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);

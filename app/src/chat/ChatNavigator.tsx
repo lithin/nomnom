@@ -2,6 +2,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
+import { useTheme } from "tamagui/native";
+
 import { ChatHistoryScreen } from "./ChatHistoryScreen";
 import { ChatScreen } from "./ChatScreen";
 import { useChat } from "./useChat";
@@ -51,6 +53,7 @@ function ChatMainContent({
 }
 
 export function ChatNavigator() {
+  const theme = useTheme();
   const {
     messages,
     input,
@@ -69,6 +72,8 @@ export function ChatNavigator() {
         options={({ navigation }) => ({
           title: "Chat",
           headerTitleAlign: "left",
+          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerTitleStyle: { color: theme.titleText.val as string },
           headerRight: () => (
             <View style={{ flexDirection: "row", gap: 16, marginRight: 4 }}>
               <TouchableOpacity
@@ -76,14 +81,14 @@ export function ChatNavigator() {
                 accessibilityRole="button"
                 accessibilityLabel="Open chat history"
               >
-                <Ionicons name="search" size={22} color="#0f172a" />
+                <Ionicons name="search-outline" size={22} color={theme.titleText.val as string} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={startNewChat}
                 accessibilityRole="button"
                 accessibilityLabel="Start new chat"
               >
-                <Ionicons name="add" size={24} color="#0f172a" />
+                <Ionicons name="add" size={24} color={theme.titleText.val as string} />
               </TouchableOpacity>
             </View>
           ),
@@ -108,16 +113,9 @@ export function ChatNavigator() {
         options={({ navigation }) => ({
           title: "Chat History",
           headerTitleAlign: "left",
+          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerTitleStyle: { color: theme.titleText.val as string },
           presentation: "card",
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={startNewChat}
-              accessibilityRole="button"
-              accessibilityLabel="Start new chat"
-            >
-              <Ionicons name="add" size={24} color="#0f172a" />
-            </TouchableOpacity>
-          ),
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => navigation.goBack()}
@@ -125,7 +123,7 @@ export function ChatNavigator() {
               accessibilityLabel="Back to chat"
               style={{ marginRight: 12 }}
             >
-              <Ionicons name="chevron-back" size={24} color="#0f172a" />
+              <Ionicons name="chevron-back" size={24} color={theme.titleText.val as string} />
             </TouchableOpacity>
           ),
         })}

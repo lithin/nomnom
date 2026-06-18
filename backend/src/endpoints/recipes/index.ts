@@ -1,5 +1,5 @@
 import type { Request, Response, Router } from "express";
-import { getPrisma } from "./db";
+import { getPrisma } from "../../shared/db";
 
 export const setupRecipesEndpoint = (app: Router) => {
   app.get("/recipes", async (_req: Request, res: Response) => {
@@ -13,6 +13,7 @@ export const setupRecipesEndpoint = (app: Router) => {
           id: true,
           title: true,
           content: true,
+          imageUrl: true,
           createdAt: true,
           chatSessionId: true,
         },

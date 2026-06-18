@@ -1,4 +1,4 @@
-import { getPrisma } from "./db";
+import { getPrisma } from "../../shared/db";
 
 type CreateRecipeWithEmbeddingParams = {
   title: string;

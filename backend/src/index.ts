@@ -1,11 +1,11 @@
 import { resolve } from "node:path";
 import dotenv from "dotenv";
 import express from "express";
-import { enforceApiKey } from "./auth";
-import { setupChatEndpoint } from "./chat";
-import { setupChatsEndpoint } from "./chats";
-import { setupHealthEndpoint } from "./health";
-import { setupRecipesEndpoint } from "./recipes";
+import { setupChatEndpoint } from "./endpoints/chat";
+import { setupChatsEndpoint } from "./endpoints/chats";
+import { setupHealthEndpoint } from "./endpoints/health";
+import { setupRecipesEndpoint } from "./endpoints/recipes";
+import { enforceApiKey } from "./shared/auth";
 
 const loadLocalEnv = () => {
   // In production (for example Cloud Run), env vars come from service config/secrets.

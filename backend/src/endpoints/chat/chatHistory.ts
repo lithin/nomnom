@@ -1,4 +1,4 @@
-import { getPrisma } from "./db";
+import { getPrisma } from "../../shared/db";
 import type { ChatRole, PersistedChatMessage } from "./types";
 
 type ChatMessageInput = {

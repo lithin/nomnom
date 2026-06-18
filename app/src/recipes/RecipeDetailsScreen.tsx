@@ -2,8 +2,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { PlatformPressable } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
+
+import { tokens } from "../theme/config";
 import { deleteRecipe, ensureRecipeChatSession } from "./api";
 import type { Recipe } from "./types";
 
@@ -86,10 +88,14 @@ export function RecipeDetailsScreen() {
       headerRight: () => (
         <View style={styles.headerActions}>
           <PlatformPressable onPress={handleEdit} style={styles.headerIconButton}>
-            <Ionicons name="create-outline" size={22} color="#007aff" />
+            <Ionicons
+              name="create-outline"
+              size={22}
+              color={tokens.color.darkOlive.val as string}
+            />
           </PlatformPressable>
           <PlatformPressable onPress={handleDelete} style={styles.headerIconButton}>
-            <Ionicons name="trash-outline" size={22} color="#ff3b30" />
+            <Ionicons name="trash-outline" size={22} color={tokens.color.darkOlive.val as string} />
           </PlatformPressable>
         </View>
       ),
@@ -103,6 +109,7 @@ export function RecipeDetailsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>{recipe.title}</Text>
       </View>
+      {recipe.imageUrl ? <Image source={{ uri: recipe.imageUrl }} style={styles.image} /> : null}
       <Text style={styles.date}>{new Date(recipe.createdAt).toLocaleDateString()}</Text>
       <View style={styles.markdownContainer}>
         <Markdown>{recipe.content}</Markdown>
@@ -131,6 +138,13 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
     marginRight: 8,
+  },
+  image: {
+    width: "100%",
+    height: 220,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: "#f3f3f3",
   },
   date: {
     fontSize: 14,

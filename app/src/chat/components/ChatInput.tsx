@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useTheme } from "tamagui/native";
 
 type ChatInputProps = {
   value: string;
@@ -8,22 +9,34 @@ type ChatInputProps = {
 };
 
 export const ChatInput = ({ value, isSending, onChangeText, onSend }: ChatInputProps) => {
+  const theme = useTheme();
+
   return (
-    <View style={styles.inputRow}>
+    <View style={[styles.inputRow, { borderTopColor: theme.borderColor.val as string }]}>
       <TextInput
         value={value}
         onChangeText={onChangeText}
-        style={styles.input}
+        style={[
+          styles.input,
+          { borderColor: theme.borderColor.val as string, color: theme.color.val as string },
+        ]}
         placeholder="Type your message"
+        placeholderTextColor={theme.colorMuted.val as string}
         editable={!isSending}
         multiline
       />
       <Pressable
-        style={[styles.sendButton, isSending ? styles.sendButtonDisabled : null]}
+        style={[
+          styles.sendButton,
+          { backgroundColor: theme.accent.val as string },
+          isSending ? styles.sendButtonDisabled : null,
+        ]}
         onPress={onSend}
         disabled={isSending}
       >
-        <Text style={styles.sendButtonText}>{isSending ? "..." : "Send"}</Text>
+        <Text style={[styles.sendButtonText, { color: theme.color.val as string }]}>
+          {isSending ? "..." : "Send"}
+        </Text>
       </Pressable>
     </View>
   );
@@ -36,22 +49,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: "#d1d5db",
-    backgroundColor: "#ffffff",
   },
   input: {
     flex: 1,
     maxHeight: 120,
     borderWidth: 1,
-    borderColor: "#9ca3af",
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#ffffff",
     fontSize: 16,
   },
   sendButton: {
-    backgroundColor: "#2563eb",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -60,7 +68,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   sendButtonText: {
-    color: "#ffffff",
     fontSize: 15,
     fontWeight: "600",
   },

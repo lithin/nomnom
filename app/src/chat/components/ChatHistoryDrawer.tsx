@@ -8,6 +8,8 @@ import {
   View,
 } from "react-native";
 import { Drawer } from "react-native-drawer-layout";
+
+import { ListCard } from "../../components/ListCard";
 import { getChatsPage } from "../api";
 import type { ChatHistoryItem } from "../types";
 
@@ -22,11 +24,7 @@ const PAGE_SIZE = 10;
 
 const ChatHistoryRow = memo(
   ({ item, onSelectChat }: { item: ChatHistoryItem; onSelectChat: (chatId: string) => void }) => (
-    <TouchableOpacity style={styles.chatRow} onPress={() => onSelectChat(item.id)}>
-      <Text style={styles.chatTitle} numberOfLines={2}>
-        {item.title}
-      </Text>
-    </TouchableOpacity>
+    <ListCard title={item.title} onPress={() => onSelectChat(item.id)} numberOfLines={2} />
   ),
 );
 
@@ -211,18 +209,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 12,
-  },
-  chatRow: {
-    backgroundColor: "#e2e8f0",
-    borderRadius: 10,
-    paddingHorizontal: 11,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  chatTitle: {
-    color: "#111827",
-    fontSize: 14,
-    fontWeight: "600",
   },
   centeredArea: {
     paddingVertical: 24,

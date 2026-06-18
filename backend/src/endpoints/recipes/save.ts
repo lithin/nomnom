@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { createRecipeWithEmbedding } from "./createRecipe";
+import { queueRecipeImageEnrichment } from "./enrichRecipeImage";
 
 export const saveRecipe = async ({
   recipe,
@@ -35,10 +36,14 @@ export const saveRecipe = async ({
 
   const embeddingString = `[${embedding.join(",")}]`;
 
-  return createRecipeWithEmbedding({
+  const createdRecipe = await createRecipeWithEmbedding({
     title,
     recipe,
     chatId,
     embeddingString,
   });
+
+  queueRecipeImageEnrichment(createdRecipe.id);
+
+  return createdRecipe;
 };

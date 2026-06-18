@@ -23,6 +23,10 @@
   },
   "dependencies": {
     "@prisma/client": "^7.6.0",
-    "@react-navigation/native-stack": "^7.14.10"
+    "@react-navigation/native-stack": "^7.14.10",
+    "@tamagui/core": "^2.0.0-rc.42",
+    "@tamagui/theme": "^2.0.0-rc.42",
+    "react-native-safe-area-context": "^5.8.0",
+    "tamagui": "^2.0.0-rc.42"
   }
 }

@@ -4,21 +4,40 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
+import { useTheme } from "tamagui/native";
+
 import { ChatNavigator } from "./src/chat/ChatNavigator";
 import { RecipeDetailsScreen } from "./src/recipes/RecipeDetailsScreen";
 import { RecipesScreen } from "./src/recipes/RecipesScreen";
+import { AppThemeProvider } from "./src/theme/AppThemeProvider";
+import { tokens } from "./src/theme/config";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function RecipesStack() {
+  const theme = useTheme();
+
   return (
     <Stack.Navigator>
-      <Stack.Screen name="RecipesList" component={RecipesScreen} options={{ title: "Recipes" }} />
+      <Stack.Screen
+        name="RecipesList"
+        component={RecipesScreen}
+        options={{
+          title: "Recipes",
+          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerTitleStyle: { color: theme.titleText.val as string },
+        }}
+      />
       <Stack.Screen
         name="RecipeDetails"
         component={RecipeDetailsScreen}
-        options={{ title: "Recipe Details" }}
+        options={{
+          title: "Recipe Details",
+          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerTintColor: tokens.color.darkOlive.val as string,
+          headerTitleStyle: { color: theme.titleText.val as string },
+        }}
       />
     </Stack.Navigator>
   );
@@ -26,10 +45,25 @@ function RecipesStack() {
 
 export default function App() {
   return (
+    <AppThemeProvider>
+      <AppNavigation />
+    </AppThemeProvider>
+  );
+}
+
+function AppNavigation() {
+  const theme = useTheme();
+
+  return (
     <NavigationContainer>
       <View style={styles.appRoot}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
+            tabBarStyle: {
+              backgroundColor: theme.backgroundPress.val as string,
+              height: 80,
+              paddingTop: 10,
+            },
             tabBarIcon: ({ focused, color, size }) => {
               let iconName = "";
 
@@ -42,8 +76,8 @@ export default function App() {
               // biome-ignore lint/suspicious/noExplicitAny: library typing requires it
               return <Ionicons name={iconName as any} size={size} color={color} />;
             },
-            tabBarActiveTintColor: "#007aff",
-            tabBarInactiveTintColor: "gray",
+            tabBarActiveTintColor: theme.color.val as string,
+            tabBarInactiveTintColor: theme.titleText.val as string,
           })}
         >
           <Tab.Screen name="Chat" component={ChatNavigator} options={{ headerShown: false }} />

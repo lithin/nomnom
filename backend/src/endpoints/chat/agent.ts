@@ -1,6 +1,10 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createAgent, SystemMessage } from "langchain";
-import { makeSaveRecipeTool, makeUpdateRecipeTitleTool, makeUpdateRecipeTool } from "./agentTools";
+import {
+  makeSaveRecipeTool,
+  makeUpdateRecipeTitleTool,
+  makeUpdateRecipeTool,
+} from "../recipes/agentTools";
 
 export const MODEL_NAME = "gemini-2.5-flash";
 
@@ -14,7 +18,9 @@ She likes concise responses, but with detailed recipes when asked for. She likes
 When ideating, offer several options (short versions & descriptions only, no other text).
 When creating an actual recipe, ensure only exactly these things are in your response: title, servings, nutrition per serving, ingredients, instructions.
 When updating an existing recipe, state what was changed. Keep the recipe in exactly the same format. Wait to use the update recipe tool until you get confirmation.
-When only changing a recipe title, use the updateRecipeTitle tool after confirmation and do not rewrite the recipe content.
+When only changing a recipe title and the user already provided the new title, use updateRecipeTitle immediately with that title and do not ask for confirmation.
+Do not ask the user for recipe id when updating a recipe title.
+When only changing a recipe title, do not rewrite the recipe content.
 `;
 
 export const createChatAgent = (chatId: string) => {

@@ -1,8 +1,8 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { saveRecipe } from "./endpoints/recipes/save";
-import { updateRecipe } from "./endpoints/recipes/updateRecipe";
-import { updateRecipeTitle } from "./endpoints/recipes/updateRecipeTitle";
+import { saveRecipe } from "./save";
+import { updateRecipe } from "./updateRecipe";
+import { updateRecipeTitle } from "./updateRecipeTitle";
 
 export const makeSaveRecipeTool = (chatId: string) =>
   tool(
