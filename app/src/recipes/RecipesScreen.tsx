@@ -1,6 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "tamagui/native";
 import { fetchRecipes } from "./api";
 import { RecipeItem } from "./components/RecipeItem";
 import type { Recipe } from "./types";
@@ -8,6 +9,7 @@ import type { Recipe } from "./types";
 export function RecipesScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
   // biome-ignore lint/suspicious/noExplicitAny: needed for navigation typing
   const navigation = useNavigation<any>();
 
@@ -44,14 +46,16 @@ export function RecipesScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.val as string }]}>
       {loading ? (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#007aff" />
+          <ActivityIndicator size="large" color={theme.accent.val as string} />
         </View>
       ) : recipes.length === 0 ? (
         <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>No saved recipes yet.</Text>
+          <Text style={[styles.emptyText, { color: theme.colorMuted.val as string }]}>
+            No saved recipes yet.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -68,7 +72,6 @@ export function RecipesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   centerContainer: {
     flex: 1,
@@ -80,6 +83,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
   },
 });

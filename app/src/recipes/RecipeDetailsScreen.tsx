@@ -107,12 +107,22 @@ export function RecipeDetailsScreen() {
   if (!recipe) return null;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background.val as string }]}
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>{recipe.title}</Text>
+        <Text style={[styles.title, { color: theme.titleText.val as string }]}>{recipe.title}</Text>
       </View>
-      {recipe.imageUrl ? <Image source={{ uri: recipe.imageUrl }} style={styles.image} /> : null}
-      <Text style={styles.date}>{new Date(recipe.createdAt).toLocaleDateString()}</Text>
+      {recipe.imageUrl ? (
+        <Image
+          source={{ uri: recipe.imageUrl }}
+          style={[styles.image, { backgroundColor: theme.backgroundSecondary.val as string }]}
+        />
+      ) : null}
+      <Text style={[styles.date, { color: theme.colorMuted.val as string }]}>
+        {new Date(recipe.createdAt).toLocaleDateString()}
+      </Text>
       {recipe.tags && recipe.tags.length > 0 && (
         <View style={styles.tagsContainer}>
           {recipe.tags.map((tag) => (
@@ -135,7 +145,6 @@ export function RecipeDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
   },
   content: {
     padding: 16,
@@ -149,7 +158,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
     flex: 1,
     marginRight: 8,
   },
@@ -158,11 +166,9 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 12,
     marginBottom: 12,
-    backgroundColor: "#f3f3f3",
   },
   date: {
     fontSize: 14,
-    color: "#888",
     marginBottom: 16,
   },
   headerActions: {
