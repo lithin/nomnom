@@ -1,8 +1,9 @@
-import { getBackendHeaders, getBackendUrl } from "../backend/apiConfig";
+import { fetchWithLogging, getBackendHeaders, getBackendUrl } from "../backend/apiConfig";
 import type { Recipe } from "./types";
 
 export const fetchRecipes = async (): Promise<Recipe[]> => {
-  const response = await fetch(`${getBackendUrl()}/recipes`, {
+  const url = `${getBackendUrl()}/recipes`;
+  const response = await fetchWithLogging(url, {
     method: "GET",
     headers: getBackendHeaders(),
   });
@@ -17,7 +18,7 @@ export const fetchRecipes = async (): Promise<Recipe[]> => {
 };
 
 export const deleteRecipe = async (id: string): Promise<void> => {
-  const response = await fetch(`${getBackendUrl()}/recipes/${id}`, {
+  const response = await fetchWithLogging(`${getBackendUrl()}/recipes/${id}`, {
     method: "DELETE",
     headers: getBackendHeaders(),
   });
@@ -28,7 +29,7 @@ export const deleteRecipe = async (id: string): Promise<void> => {
 };
 
 export const ensureRecipeChatSession = async (recipeId: string): Promise<string> => {
-  const response = await fetch(`${getBackendUrl()}/recipes/${recipeId}/chat-session`, {
+  const response = await fetchWithLogging(`${getBackendUrl()}/recipes/${recipeId}/chat-session`, {
     method: "POST",
     headers: getBackendHeaders(),
   });

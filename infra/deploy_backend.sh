@@ -35,6 +35,7 @@ REGION="$(extract_tfvar region)"
 CONTAINER_IMAGE="$(extract_tfvar container_image)"
 BACKEND_API_KEY_SECRET_NAME="nomnom-backend-api-key"
 DATABASE_URL_SECRET_NAME="nomnom-database-url-prod"
+UNSPLASH_ACCESS_KEY_SECRET_NAME="nomnom-unsplash-access-key"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "project_id must be set in ${TFVARS_FILE}" >&2
@@ -77,6 +78,16 @@ else
     --project "${PROJECT_ID}"
 
   echo "Created secret ${BACKEND_API_KEY_SECRET_NAME} with initial version."
+fi
+
+echo "Ensuring Unsplash access key secret exists in Secret Manager..."
+if gcloud secrets describe "${UNSPLASH_ACCESS_KEY_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  echo "Secret ${UNSPLASH_ACCESS_KEY_SECRET_NAME} already exists; reusing it."
+else
+  echo "Secret ${UNSPLASH_ACCESS_KEY_SECRET_NAME} not found. Please create it manually:"
+  echo "  gcloud secrets create ${UNSPLASH_ACCESS_KEY_SECRET_NAME} --replication-policy=automatic --project ${PROJECT_ID}"
+  echo "  printf '<your-unsplash-access-key>' | gcloud secrets versions add ${UNSPLASH_ACCESS_KEY_SECRET_NAME} --data-file=- --project ${PROJECT_ID}"
+  exit 1
 fi
 
 echo "Applying Terraform..."

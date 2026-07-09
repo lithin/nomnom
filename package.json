@@ -14,7 +14,7 @@
     "docker:backend:push": "gcloud auth configure-docker us-west2-docker.pkg.dev && docker buildx build --platform linux/amd64 -t us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest --push -f ./backend/Dockerfile .",
     "dev": "npm run -w backend dev",
     "start": "npm run -w backend start",
-    "typecheck": "npm run -w backend typecheck",
+    "typecheck": "npm run -w backend typecheck && npm run --prefix app typecheck",
     "check": "npm run biome:check && npm run typecheck"
   },
   "devDependencies": {

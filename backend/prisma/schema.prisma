@@ -23,8 +23,16 @@ model Recipe {
   createdAt     DateTime                    @default(now())
   chatSessionId String?
   chatSession   ChatSession?                @relation(fields: [chatSessionId], references: [id], onDelete: SetNull)
+  tags          Tag[]
 
   @@index([chatSessionId])
+}
+
+model Tag {
+  id        String                      @id @default(uuid())
+  name      String                      @unique
+  embedding Unsupported("vector(768)")?
+  recipes   Recipe[]
 }
 
 enum ChatRole {

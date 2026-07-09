@@ -78,7 +78,7 @@ export const tokens = createTokens({
 
 const lightTheme = {
   background: tokens.color.white,
-  backgroundPress: tokens.color.sage,
+  backgroundSecondary: tokens.color.sage,
   color: tokens.color.darkOlive,
   darkOlive: tokens.color.darkOlive,
   titleText: tokens.color.darkOlive,
@@ -89,7 +89,7 @@ const lightTheme = {
 
 const darkTheme = {
   background: tokens.color.charcoal,
-  backgroundPress: tokens.color.deepSage,
+  backgroundSecondary: tokens.color.deepSage,
   color: tokens.color.sage,
   darkOlive: tokens.color.darkOlive,
   titleText: tokens.color.crispCream,

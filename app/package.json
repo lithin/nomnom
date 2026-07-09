@@ -10,7 +10,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:android:preview": "npx eas-cli build --platform android --profile preview"
+    "build:android:preview": "npx eas-cli build --platform android --profile preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

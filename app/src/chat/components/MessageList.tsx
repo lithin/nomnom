@@ -20,12 +20,12 @@ const MessageItem = memo(({ item }: { item: Message }) => {
       marginBottom: 10,
     },
     code_block: {
-      backgroundColor: theme.backgroundPress.val as string,
+      backgroundColor: theme.backgroundSecondary.val as string,
       borderRadius: 8,
       padding: 10,
     },
     code_inline: {
-      backgroundColor: theme.backgroundPress.val as string,
+      backgroundColor: theme.backgroundSecondary.val as string,
       color: theme.color.val as string,
       borderRadius: 4,
       paddingHorizontal: 4,
@@ -55,7 +55,7 @@ const MessageItem = memo(({ item }: { item: Message }) => {
       borderRadius={14}
       paddingHorizontal="$3"
       paddingVertical="$2"
-      backgroundColor={isUser ? "$backgroundPress" : "$accent"}
+      backgroundColor={isUser ? "$backgroundSecondary" : "$accent"}
       alignSelf={isUser ? "flex-end" : "flex-start"}
       unstyled
     >

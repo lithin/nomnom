@@ -5,4 +5,5 @@ export interface Recipe {
   imageUrl?: string | null;
   createdAt: string;
   chatSessionId?: string | null;
+  tags?: string[];
 }

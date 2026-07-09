@@ -23,3 +23,16 @@ export const getBackendHeaders = () => ({
   "Content-Type": "application/json",
   "x-api-key": getBackendApiKey(),
 });
+
+export const fetchWithLogging: typeof fetch = async (input, init) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  console.log(`[fetch] ${init?.method ?? "GET"} ${url}`);
+  try {
+    const response = await fetch(input, init);
+    console.log(`[fetch] ${response.status} ${url}`);
+    return response;
+  } catch (error) {
+    console.error(`[fetch] FAILED ${url}:`, error);
+    throw error;
+  }
+};

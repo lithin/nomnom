@@ -11,8 +11,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://nomnom-backend-k2hyz7s5la-wl.a.run.app",
-        "EXPO_PUBLIC_BACKEND_API_KEY": "f303654f4e868354354eaa0b5241029dce5340764f986bf3beca90efa9aad04e"
+        "EXPO_PUBLIC_API_URL": "https://nomnom-backend-k2hyz7s5la-wl.a.run.app"
       }
     },
     "production": {

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { getPrisma } from "../../shared/db";
-import { createRecipeWithEmbedding } from "./createRecipe";
+import { createRecipe } from "./createRecipe";
+import { generateRecipeMetadata } from "./generateMetadata";
 import { getOrCreateRecipe } from "./getOrCreateRecipe";
 
 export const updateRecipe = async ({
@@ -26,12 +27,7 @@ export const updateRecipe = async ({
     config: { outputDimensionality: 768 },
   });
 
-  if (!embeddingResponse.embeddings || embeddingResponse.embeddings.length === 0) {
-    throw new Error("Failed to generate embedding for the recipe");
-  }
-
-  const embedding = embeddingResponse.embeddings[0]?.values;
-
+  const embedding = embeddingResponse.embeddings?.[0]?.values;
   if (!embedding || embedding.length === 0) {
     throw new Error("Failed to extract embedding values");
   }
@@ -42,20 +38,14 @@ export const updateRecipe = async ({
   const { recipe: resolvedRecipe, created } = await getOrCreateRecipe({
     id,
     chatId,
-    createRecipe: () =>
-      createRecipeWithEmbedding({
-        title,
-        recipe,
-        chatId,
-        embeddingString,
-      }),
+    createRecipe: () => createRecipe({ title, recipe, chatId }),
   });
 
   if (created) {
     return 1;
   }
 
-  const updatedRecipe = await prisma.$executeRaw`
+  const updatedCount = await prisma.$executeRaw`
     UPDATE "Recipe"
     SET title = ${title},
         content = ${recipe},
@@ -63,15 +53,12 @@ export const updateRecipe = async ({
     WHERE id = ${resolvedRecipe.id}
   `;
 
-  if (updatedRecipe === 0) {
-    await createRecipeWithEmbedding({
-      title,
-      recipe,
-      chatId,
-      embeddingString,
-    });
+  if (updatedCount === 0) {
+    await createRecipe({ title, recipe, chatId });
     return 1;
   }
 
-  return updatedRecipe;
+  generateRecipeMetadata(resolvedRecipe.id, recipe);
+
+  return updatedCount;
 };

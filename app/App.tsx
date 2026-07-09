@@ -25,7 +25,7 @@ function RecipesStack() {
         component={RecipesScreen}
         options={{
           title: "Recipes",
-          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
           headerTitleStyle: { color: theme.titleText.val as string },
         }}
       />
@@ -34,7 +34,7 @@ function RecipesStack() {
         component={RecipeDetailsScreen}
         options={{
           title: "Recipe Details",
-          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
           headerTintColor: tokens.color.darkOlive.val as string,
           headerTitleStyle: { color: theme.titleText.val as string },
         }}
@@ -60,7 +60,7 @@ function AppNavigation() {
         <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarStyle: {
-              backgroundColor: theme.backgroundPress.val as string,
+              backgroundColor: theme.backgroundSecondary.val as string,
               height: 80,
               paddingTop: 10,
             },

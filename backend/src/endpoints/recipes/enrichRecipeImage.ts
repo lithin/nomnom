@@ -1,62 +1,34 @@
 import { getPrisma } from "../../shared/db";
 import { getErrorMessage } from "../../shared/utils";
 
-const RECIPE_IMAGE_SEARCH_BASE_URL = "https://commons.wikimedia.org/w/api.php";
+const searchRecipeImageUrl = async (title: string): Promise<string | null> => {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
 
-const buildImageSearchUrl = (title: string) => {
+  if (!accessKey) {
+    throw new Error("UNSPLASH_ACCESS_KEY is not configured");
+  }
+
   const params = new URLSearchParams({
-    action: "query",
-    format: "json",
-    generator: "search",
-    gsrsearch: `${title} dish food`,
-    gsrnamespace: "6",
-    gsrlimit: "10",
-    prop: "imageinfo",
-    iiprop: "url",
-    iiurlwidth: "1200",
+    query: title,
+    per_page: "1",
+    orientation: "landscape",
   });
 
-  return `${RECIPE_IMAGE_SEARCH_BASE_URL}?${params.toString()}`;
-};
-
-type WikimediaPage = {
-  title?: string;
-  imageinfo?: Array<{ url?: string; thumburl?: string }>;
-};
-
-const isSupportedImageTitle = (title: string) => /\.(jpg|jpeg|png|webp)$/i.test(title);
-
-const searchRecipeImageUrl = async (title: string): Promise<string | null> => {
-  const response = await fetch(buildImageSearchUrl(title));
+  const response = await fetch(`https://api.unsplash.com/search/photos?${params.toString()}`, {
+    headers: {
+      Authorization: `Client-ID ${accessKey}`,
+    },
+  });
 
   if (!response.ok) {
-    throw new Error(`Image search failed with status ${response.status}`);
+    throw new Error(`Unsplash image search failed with status ${response.status}`);
   }
 
   const payload = (await response.json()) as {
-    query?: {
-      pages?: Record<string, WikimediaPage>;
-    };
+    results?: Array<{ urls?: { regular?: string } }>;
   };
 
-  const pages = Object.values(payload.query?.pages ?? {});
-
-  for (const page of pages) {
-    const pageTitle = page.title ?? "";
-
-    if (!isSupportedImageTitle(pageTitle)) {
-      continue;
-    }
-
-    const imageInfo = page.imageinfo?.[0];
-    const candidateUrl = imageInfo?.thumburl ?? imageInfo?.url;
-
-    if (candidateUrl) {
-      return candidateUrl;
-    }
-  }
-
-  return null;
+  return payload.results?.[0]?.urls?.regular ?? null;
 };
 
 export const runRecipeImageEnrichment = async (recipeId: string) => {

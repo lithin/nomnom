@@ -72,7 +72,7 @@ export function ChatNavigator() {
         options={({ navigation }) => ({
           title: "Chat",
           headerTitleAlign: "left",
-          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
           headerTitleStyle: { color: theme.titleText.val as string },
           headerRight: () => (
             <View style={{ flexDirection: "row", gap: 16, marginRight: 4 }}>
@@ -113,7 +113,7 @@ export function ChatNavigator() {
         options={({ navigation }) => ({
           title: "Chat History",
           headerTitleAlign: "left",
-          headerStyle: { backgroundColor: theme.backgroundPress.val as string },
+          headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
           headerTitleStyle: { color: theme.titleText.val as string },
           presentation: "card",
           headerLeft: () => (

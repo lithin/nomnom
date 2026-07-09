@@ -16,9 +16,11 @@ export const setupRecipesEndpoint = (app: Router) => {
           imageUrl: true,
           createdAt: true,
           chatSessionId: true,
+          tags: { select: { name: true } },
         },
       });
-      res.status(200).json({ recipes });
+      const mapped = recipes.map(({ tags, ...r }) => ({ ...r, tags: tags.map((t) => t.name) }));
+      res.status(200).json({ recipes: mapped, source: "local" });
     } catch (error) {
       console.error("Error fetching recipes:", error);
       res.status(500).json({ error: "Failed to fetch recipes" });

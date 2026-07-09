@@ -21,6 +21,7 @@
   "files": {
     "includes": [
       "**",
+      "!**/.claude",
       "!**/node_modules",
       "!**/dist",
       "!**/.expo",

@@ -4,6 +4,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
+import { useTheme } from "tamagui/native";
 
 import { tokens } from "../theme/config";
 import { deleteRecipe, ensureRecipeChatSession } from "./api";
@@ -14,6 +15,7 @@ export function RecipeDetailsScreen() {
   const route = useRoute<any>();
   // biome-ignore lint/suspicious/noExplicitAny: needed for navigation typing
   const navigation = useNavigation<any>();
+  const theme = useTheme();
   const recipe: Recipe = (route.params as { recipe: Recipe })?.recipe;
   const [chatSessionId, setChatSessionId] = useState<string | null>(recipe?.chatSessionId ?? null);
   const [isPreparingEditChat, setPreparingEditChat] = useState(false);
@@ -111,6 +113,18 @@ export function RecipeDetailsScreen() {
       </View>
       {recipe.imageUrl ? <Image source={{ uri: recipe.imageUrl }} style={styles.image} /> : null}
       <Text style={styles.date}>{new Date(recipe.createdAt).toLocaleDateString()}</Text>
+      {recipe.tags && recipe.tags.length > 0 && (
+        <View style={styles.tagsContainer}>
+          {recipe.tags.map((tag) => (
+            <View
+              key={tag}
+              style={[styles.tag, { backgroundColor: theme.backgroundSecondary.val as string }]}
+            >
+              <Text style={[styles.tagText, { color: theme.color.val as string }]}>{tag}</Text>
+            </View>
+          ))}
+        </View>
+      )}
       <View style={styles.markdownContainer}>
         <Markdown>{recipe.content}</Markdown>
       </View>
@@ -161,5 +175,19 @@ const styles = StyleSheet.create({
   },
   markdownContainer: {
     marginTop: 8,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 16,
+  },
+  tag: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tagText: {
+    fontSize: 13,
   },
 });

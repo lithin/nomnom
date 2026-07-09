@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "start": "tsx watch src/index.ts",
-    "start:prod": "npm run build && node dist/index.js"
+    "start:prod": "npm run build && node dist/index.js",
+    "backfill-images": "tsx src/scripts/backfillRecipeImages.ts"
   },
   "dependencies": {
     "@google/genai": "^2.2.0",
