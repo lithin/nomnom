@@ -17,6 +17,19 @@ export const fetchRecipes = async (): Promise<Recipe[]> => {
   return data.recipes || [];
 };
 
+export const fetchRecipe = async (id: string): Promise<Recipe> => {
+  const response = await fetchWithLogging(`${getBackendUrl()}/recipes/${id}`, {
+    method: "GET",
+    headers: getBackendHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch recipe");
+  }
+
+  return (await response.json()) as Recipe;
+};
+
 export const deleteRecipe = async (id: string): Promise<void> => {
   const response = await fetchWithLogging(`${getBackendUrl()}/recipes/${id}`, {
     method: "DELETE",

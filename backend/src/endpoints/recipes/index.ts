@@ -80,6 +80,42 @@ export const setupRecipesEndpoint = (app: Router) => {
     }
   });
 
+  app.get("/recipes/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      if (typeof id !== "string") {
+        res.status(400).json({ error: "Invalid ID" });
+        return;
+      }
+
+      const prisma = getPrisma();
+      const recipe = await prisma.recipe.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          imageUrl: true,
+          createdAt: true,
+          chatSessionId: true,
+          tags: { select: { name: true } },
+        },
+      });
+
+      if (!recipe) {
+        res.status(404).json({ error: "Recipe not found" });
+        return;
+      }
+
+      const { tags, ...rest } = recipe;
+      res.status(200).json({ ...rest, tags: tags.map((t) => t.name) });
+    } catch (error) {
+      console.error("Error fetching recipe:", error);
+      res.status(500).json({ error: "Failed to fetch recipe" });
+    }
+  });
+
   app.delete("/recipes/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
