@@ -1,11 +1,6 @@
 import { resolve } from "node:path";
 import dotenv from "dotenv";
-import express from "express";
-import { setupChatEndpoint } from "./endpoints/chat";
-import { setupChatsEndpoint } from "./endpoints/chats";
-import { setupHealthEndpoint } from "./endpoints/health";
-import { setupRecipesEndpoint } from "./endpoints/recipes";
-import { enforceApiKey } from "./shared/auth";
+import { createApp } from "./app";
 
 const loadLocalEnv = () => {
   // In production (for example Cloud Run), env vars come from service config/secrets.
@@ -18,16 +13,8 @@ const loadLocalEnv = () => {
 
 loadLocalEnv();
 
-const app = express();
+const app = createApp();
 const port = Number(process.env.PORT) || 8080;
-
-app.use(express.json());
-
-setupHealthEndpoint(app);
-app.use(enforceApiKey);
-setupChatEndpoint(app);
-setupChatsEndpoint(app);
-setupRecipesEndpoint(app);
 
 app.listen(port, () => {
   console.log(`Backend listening on port ${port}`);
