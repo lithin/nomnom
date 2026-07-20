@@ -1,0 +1,6 @@
+# Maestro workspace config for e2e flows.
+# Retries hide the real failure and leave overlapping app state; fail fast.
+disableRetries: true
+# Only top-level files are test flows; common/ holds reusable subflows.
+flows:
+  - "*.yaml"

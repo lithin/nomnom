@@ -1,0 +1,143 @@
+// Dependency-free mock of the nomnom backend for e2e tests.
+// The app is pointed here via EXPO_PUBLIC_API_URL (see e2e/run.sh).
+// Response shapes mirror backend/src/endpoints/*; state is in-memory and
+// resets on every server start so each e2e run begins from the same fixtures.
+import { createServer } from "node:http";
+
+const PORT = Number(process.env.MOCK_API_PORT ?? 4001);
+
+const RECIPE_ID = "e2e-recipe-1";
+const CHAT_SESSION_ID = "e2e-chat-session-1";
+
+// Contract: GET /recipes always returns a chatSessionId — recipes are created
+// from chats and linked at creation, and the backend backfills any recipe
+// missing one during retrieval. The linked session holds the conversation the
+// edit button opens.
+const recipeFixture = {
+  id: RECIPE_ID,
+  title: "Lemon Pancakes",
+  content:
+    "## Ingredients\n\n- 1 cup flour\n- 1 lemon\n- 2 eggs\n\n## Steps\n\n1. Mix everything.\n2. Fry until golden.",
+  imageUrl: null,
+  createdAt: "2026-07-01T10:00:00.000Z",
+  chatSessionId: CHAT_SESSION_ID,
+  tags: ["breakfast"],
+};
+
+const chatMessagesFixture = [
+  {
+    id: `${RECIPE_ID}-history-1`,
+    chatId: CHAT_SESSION_ID,
+    role: "user",
+    text: `I want to update the recipe "${recipeFixture.title}". Let's start with what we have. Please provide the current recipe and I will tell you what to change.`,
+    createdAt: "2026-07-01T10:00:01.000Z",
+  },
+  {
+    id: `${RECIPE_ID}-history-2`,
+    chatId: CHAT_SESSION_ID,
+    role: "assistant",
+    text: `Sure. Here is the current recipe for "${recipeFixture.title}":\n\n${recipeFixture.content}\n\nWhat would you like me to update?`,
+    createdAt: "2026-07-01T10:00:02.000Z",
+  },
+];
+
+const buildInitialState = () => ({
+  recipes: [{ ...recipeFixture }],
+  chatSessions: new Map([
+    [
+      CHAT_SESSION_ID,
+      {
+        id: CHAT_SESSION_ID,
+        title: recipeFixture.title,
+        createdAt: "2026-07-01T10:00:00.000Z",
+        messages: [...chatMessagesFixture],
+      },
+    ],
+  ]),
+});
+
+let state = buildInitialState();
+
+const sendJson = (res, status, body) => {
+  res.writeHead(status, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(body));
+};
+
+const readBody = (req) =>
+  new Promise((resolve) => {
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+    req.on("end", () => {
+      try {
+        resolve(data ? JSON.parse(data) : {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const { pathname } = url;
+  console.log(`[mock-api] ${req.method} ${pathname}`);
+
+  // Test hook: reset fixtures without restarting the server.
+  if (req.method === "POST" && pathname === "/__reset") {
+    state = buildInitialState();
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/health") {
+    sendJson(res, 200, { status: "ok" });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/recipes") {
+    sendJson(res, 200, { recipes: state.recipes, source: "mock" });
+    return;
+  }
+
+  const deleteRecipeMatch = pathname.match(/^\/recipes\/([^/]+)$/);
+  if (req.method === "DELETE" && deleteRecipeMatch) {
+    state.recipes = state.recipes.filter((r) => r.id !== deleteRecipeMatch[1]);
+    sendJson(res, 200, { success: true });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/chats") {
+    const chats = [...state.chatSessions.values()].map(({ id, title, createdAt }) => ({
+      id,
+      title,
+      createdAt,
+    }));
+    sendJson(res, 200, { chats, totalCount: chats.length, hasMore: false });
+    return;
+  }
+
+  const chatMessagesMatch = pathname.match(/^\/chats\/([^/]+)\/messages$/);
+  if (req.method === "GET" && chatMessagesMatch) {
+    const session = state.chatSessions.get(chatMessagesMatch[1]);
+    if (!session) {
+      sendJson(res, 404, { error: "Chat not found" });
+      return;
+    }
+    sendJson(res, 200, { messages: session.messages });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/chat") {
+    const body = await readBody(req);
+    const chatId = body.chatId ?? CHAT_SESSION_ID;
+    sendJson(res, 200, { reply: "Mock reply: noted!", chatId });
+    return;
+  }
+
+  sendJson(res, 404, { error: `No mock for ${req.method} ${pathname}` });
+});
+
+server.listen(PORT, () => {
+  console.log(`[mock-api] listening on http://localhost:${PORT}`);
+});

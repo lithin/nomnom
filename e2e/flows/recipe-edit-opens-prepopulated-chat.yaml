@@ -1,0 +1,22 @@
+# Regression test: tapping Edit on a recipe detail screen must open the chat
+# pre-populated with the recipe context, not an empty chat.
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+# Tab bar items expose accessibility text like "Recipes, tab, 2 of 2".
+- tapOn: "Recipes, tab.*"
+- extendedWaitUntil:
+    visible: "Lemon Pancakes"
+    timeout: 15000
+- tapOn: "Lemon Pancakes"
+- extendedWaitUntil:
+    visible: "Edit recipe"
+    timeout: 10000
+- tapOn: "Edit recipe"
+# The chat must open showing the seeded conversation about this recipe.
+- extendedWaitUntil:
+    visible: ".*I want to update the recipe .Lemon Pancakes.*"
+    timeout: 20000
+- assertVisible: ".*What would you like me to update.*"

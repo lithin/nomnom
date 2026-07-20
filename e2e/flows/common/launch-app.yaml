@@ -1,0 +1,18 @@
+# Shared launch sequence: open the app in Expo Go and get past Expo Go chrome.
+# Use from flows via: runFlow: { file: common/launch-app.yaml }
+appId: host.exp.Exponent
+---
+# disableOnboarding asks Expo Go to skip its developer-menu onboarding sheet.
+- openLink: exp://127.0.0.1:${METRO_PORT}?disableOnboarding=1
+# Wait for the JS bundle to load; the app opens on the Chat tab.
+- extendedWaitUntil:
+    visible: "Chat"
+    timeout: 90000
+- waitForAnimationToEnd
+# Some Expo Go versions still show the onboarding sheet, rendered in a native
+# window Maestro cannot see, so text matching never finds it. Blind-tap the
+# sheet's close (X) position; without the sheet this hits empty chat
+# background and is harmless.
+- tapOn:
+    point: 94%,52%
+- waitForAnimationToEnd

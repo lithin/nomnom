@@ -1,13 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { PlatformPressable } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { useTheme } from "tamagui/native";
 
 import { tokens } from "../theme/config";
-import { deleteRecipe, ensureRecipeChatSession } from "./api";
+import { deleteRecipe } from "./api";
 import type { Recipe } from "./types";
 
 export function RecipeDetailsScreen() {
@@ -17,45 +17,29 @@ export function RecipeDetailsScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
   const recipe: Recipe = (route.params as { recipe: Recipe })?.recipe;
-  const [chatSessionId, setChatSessionId] = useState<string | null>(recipe?.chatSessionId ?? null);
-  const [isPreparingEditChat, setPreparingEditChat] = useState(false);
-
-  useEffect(() => {
-    setChatSessionId(recipe?.chatSessionId ?? null);
-  }, [recipe?.chatSessionId]);
 
   const handleEdit = useCallback(() => {
-    if (!recipe || isPreparingEditChat) {
+    if (!recipe) {
       return;
     }
 
-    const openEditChat = async () => {
-      try {
-        setPreparingEditChat(true);
+    // The backend guarantees a chatSessionId on retrieval, creating the chat
+    // session if the recipe doesn't have one yet.
+    if (!recipe.chatSessionId) {
+      Alert.alert(
+        "Unable To Start Editing",
+        "This recipe has no chat yet. Please go back to the recipe list and try again.",
+      );
+      return;
+    }
 
-        const resolvedChatSessionId = chatSessionId ?? (await ensureRecipeChatSession(recipe.id));
-
-        setChatSessionId(resolvedChatSessionId);
-
-        navigation.getParent()?.navigate("Chat", {
-          screen: "ChatMain",
-          params: {
-            chatId: resolvedChatSessionId,
-          },
-        });
-      } catch (error) {
-        console.error("Failed to prepare recipe edit chat", error);
-        Alert.alert(
-          "Unable To Start Editing",
-          "We couldn't prepare a chat for this recipe. Please try again.",
-        );
-      } finally {
-        setPreparingEditChat(false);
-      }
-    };
-
-    void openEditChat();
-  }, [navigation, recipe, chatSessionId, isPreparingEditChat]);
+    navigation.getParent()?.navigate("Chat", {
+      screen: "ChatMain",
+      params: {
+        chatId: recipe.chatSessionId,
+      },
+    });
+  }, [navigation, recipe]);
 
   const handleDelete = useCallback(() => {
     if (!recipe) {
@@ -89,14 +73,24 @@ export function RecipeDetailsScreen() {
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerActions}>
-          <PlatformPressable onPress={handleEdit} style={styles.headerIconButton}>
+          <PlatformPressable
+            onPress={handleEdit}
+            style={styles.headerIconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Edit recipe"
+          >
             <Ionicons
               name="create-outline"
               size={22}
               color={tokens.color.darkOlive.val as string}
             />
           </PlatformPressable>
-          <PlatformPressable onPress={handleDelete} style={styles.headerIconButton}>
+          <PlatformPressable
+            onPress={handleDelete}
+            style={styles.headerIconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Delete recipe"
+          >
             <Ionicons name="trash-outline" size={22} color={tokens.color.darkOlive.val as string} />
           </PlatformPressable>
         </View>
