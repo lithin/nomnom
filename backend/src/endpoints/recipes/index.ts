@@ -109,7 +109,11 @@ export const setupRecipesEndpoint = (app: Router) => {
       }
 
       const { tags, ...rest } = recipe;
-      res.status(200).json({ ...rest, tags: tags.map((t) => t.name) });
+      res.status(200).json({
+        ...rest,
+        chatSessionId: rest.chatSessionId ?? (await createAndLinkChatSession(rest)),
+        tags: tags.map((t) => t.name),
+      });
     } catch (error) {
       console.error("Error fetching recipe:", error);
       res.status(500).json({ error: "Failed to fetch recipe" });
