@@ -19,7 +19,7 @@ npm run test:integration
 npm run e2e
 ```
 
-This drives the app in the iOS simulator with Maestro against a mocked backend (see `e2e/README.md`). If any flow fails, fix the regression and rerun until green — do not open the PR with failing e2e tests.
+This drives the app in the iOS simulator with Maestro against a mocked backend (see `app/e2e/README.md`). If any flow fails, fix the regression and rerun until green — do not open the PR with failing e2e tests.
 
 ## Styling
 

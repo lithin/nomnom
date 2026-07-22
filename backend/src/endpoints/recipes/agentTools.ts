@@ -1,6 +1,7 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { saveRecipe } from "./save";
+import { browseSavedRecipes, searchSavedRecipes } from "./searchRecipes";
 import { updateRecipe } from "./updateRecipe";
 import { updateRecipeTitle } from "./updateRecipeTitle";
 
@@ -42,6 +43,38 @@ export const makeUpdateRecipeTool = (chatId: string) =>
       }),
     },
   );
+
+export const findSavedRecipesTool = tool(
+  async ({ dish }: { dish: string }) => {
+    const results = await searchSavedRecipes(dish);
+    if (results.length === 0) return "No saved recipes found.";
+    return JSON.stringify(results);
+  },
+  {
+    name: "findSavedRecipes",
+    description:
+      "Search the user's saved recipe collection for a specific dish. Returns candidate recipes as JSON with id, title, tags, contentSimilarity and tagSimilarity (0-1, higher is more similar). Use the id to build recipe links.",
+    schema: z.object({
+      dish: z.string().describe("The dish the user asked for, e.g. 'apple muffins'"),
+    }),
+  },
+);
+
+export const browseSavedRecipesTool = tool(
+  async ({ theme }: { theme: string }) => {
+    const results = await browseSavedRecipes(theme);
+    if (results.length === 0) return "No saved recipes found.";
+    return JSON.stringify(results);
+  },
+  {
+    name: "browseSavedRecipes",
+    description:
+      "Browse the user's saved recipes by theme when they ask for open-ended ideas. Returns candidate recipes as JSON with id, title, tags and tagSimilarity (0-1, higher is more similar). Use the id to build recipe links.",
+    schema: z.object({
+      theme: z.string().describe("Short theme, e.g. 'dinner', 'baking', 'dessert', 'quick lunch'"),
+    }),
+  },
+);
 
 export const makeUpdateRecipeTitleTool = (chatId: string) =>
   tool(

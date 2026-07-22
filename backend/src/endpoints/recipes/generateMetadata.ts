@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { getPrisma } from "../../shared/db";
+import { embedText } from "../../shared/embeddings";
 import { getErrorMessage } from "../../shared/utils";
 import { queueRecipeImageEnrichment } from "./enrichRecipeImage";
 
@@ -16,22 +17,13 @@ const generateTagNames = async (content: string, ai: GoogleGenAI): Promise<strin
   return (parsed as unknown[]).slice(0, 5).map(String);
 };
 
-const upsertTag = async (name: string, ai: GoogleGenAI): Promise<string> => {
+const upsertTag = async (name: string): Promise<string> => {
   const prisma = getPrisma();
 
   const existing = await prisma.tag.findUnique({ where: { name }, select: { id: true } });
   if (existing) return existing.id;
 
-  const embeddingResponse = await ai.models.embedContent({
-    model: "gemini-embedding-001",
-    contents: name,
-    config: { outputDimensionality: 768 },
-  });
-
-  const embedding = embeddingResponse.embeddings?.[0]?.values;
-  if (!embedding || embedding.length === 0) throw new Error(`Failed to embed tag: ${name}`);
-
-  const embeddingString = `[${embedding.join(",")}]`;
+  const embeddingString = await embedText(name);
 
   const created = await prisma.tag.create({ data: { name }, select: { id: true } });
 
@@ -40,14 +32,14 @@ const upsertTag = async (name: string, ai: GoogleGenAI): Promise<string> => {
   return created.id;
 };
 
-const generateAndSaveTags = async (recipeId: string, content: string): Promise<void> => {
+export const generateAndSaveTags = async (recipeId: string, content: string): Promise<void> => {
   if (!process.env.GEMINI_API_KEY) return;
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const prisma = getPrisma();
 
   const tagNames = await generateTagNames(content, ai);
-  const tagIds = await Promise.all(tagNames.map((name) => upsertTag(name, ai)));
+  const tagIds = await Promise.all(tagNames.map((name) => upsertTag(name)));
 
   await prisma.recipe.update({
     where: { id: recipeId },

@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # Runs the e2e suite: mock API + Expo dev server + Maestro flows on the iOS simulator.
-# Usage: npm run e2e   (or: bash e2e/run.sh [flow-file])
+# Usage: npm run e2e   (or: bash app/e2e/run.sh [flow-file])
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+E2E_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$(cd "$E2E_DIR/.." && pwd)"
 MOCK_PORT="${MOCK_API_PORT:-4001}"
 # 8082 by default so e2e runs don't clash with a regular `expo start` on 8081.
 METRO_PORT="${METRO_PORT:-8082}"
-FLOWS="${1:-$ROOT/e2e/flows}"
+FLOWS="${1:-$E2E_DIR/flows}"
 
 MOCK_PID=""
 EXPO_PID=""
+ENV_LOCAL=""
 
 cleanup() {
   # Kill by listening port too: killing the subshell PID alone leaves the
@@ -19,6 +21,7 @@ cleanup() {
   [[ -n "$EXPO_PID" ]] && kill "$EXPO_PID" 2>/dev/null || true
   lsof -ti tcp:"$METRO_PORT" 2>/dev/null | xargs kill 2>/dev/null || true
   lsof -ti tcp:"$MOCK_PORT" 2>/dev/null | xargs kill 2>/dev/null || true
+  [[ -n "$ENV_LOCAL" ]] && rm -f "$ENV_LOCAL" || true
 }
 trap cleanup EXIT
 
@@ -45,7 +48,7 @@ if lsof -ti tcp:"$METRO_PORT" >/dev/null 2>&1; then
 fi
 
 echo "==> Starting mock API on port $MOCK_PORT"
-node "$ROOT/e2e/mock-server/server.mjs" &
+node "$E2E_DIR/mock-server/server.mjs" &
 MOCK_PID=$!
 wait_for_url "http://localhost:$MOCK_PORT/health" "mock API" 15
 
@@ -53,7 +56,16 @@ echo "==> Starting Expo dev server (app pointed at the mock API)"
 export EXPO_PUBLIC_API_URL="http://localhost:$MOCK_PORT"
 export EXPO_PUBLIC_BACKEND_API_KEY="e2e-mock-key"
 export CI=1
-(cd "$ROOT/app" && npx expo start --ios --port "$METRO_PORT" >/tmp/nomnom-e2e-expo.log 2>&1) &
+# Metro inlines EXPO_PUBLIC_* from .env files, which would otherwise shadow the
+# exports above with a developer's local app/.env (e.g. pointing at a real
+# backend). Write a gitignored .env.local (higher precedence than .env) so the
+# app always talks to the mock; cleanup() removes it on exit.
+ENV_LOCAL="$APP_DIR/.env.local"
+cat >"$ENV_LOCAL" <<EOF
+EXPO_PUBLIC_API_URL=http://localhost:$MOCK_PORT
+EXPO_PUBLIC_BACKEND_API_KEY=e2e-mock-key
+EOF
+(cd "$APP_DIR" && npx expo start --ios --port "$METRO_PORT" >/tmp/nomnom-e2e-expo.log 2>&1) &
 EXPO_PID=$!
 wait_for_url "http://localhost:$METRO_PORT/status" "Metro" 120
 

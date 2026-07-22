@@ -9,8 +9,8 @@ import { useTheme } from "tamagui/native";
 import { ChatNavigator } from "./src/chat/ChatNavigator";
 import { RecipeDetailsScreen } from "./src/recipes/RecipeDetailsScreen";
 import { RecipesScreen } from "./src/recipes/RecipesScreen";
+import { getRecipeDetailsScreenOptions } from "./src/recipes/recipeDetailsScreenOptions";
 import { AppThemeProvider } from "./src/theme/AppThemeProvider";
-import { tokens } from "./src/theme/config";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -32,12 +32,7 @@ function RecipesStack() {
       <Stack.Screen
         name="RecipeDetails"
         component={RecipeDetailsScreen}
-        options={{
-          title: "Recipe Details",
-          headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
-          headerTintColor: tokens.color.darkOlive.val as string,
-          headerTitleStyle: { color: theme.titleText.val as string },
-        }}
+        options={getRecipeDetailsScreenOptions(theme)}
       />
     </Stack.Navigator>
   );

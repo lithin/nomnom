@@ -21,8 +21,8 @@ local mock server so runs are fast, deterministic, and never touch real data.
 ## Running
 
 ```sh
-npm run e2e                 # run all flows
-bash e2e/run.sh e2e/flows/recipe-edit-opens-prepopulated-chat.yaml   # single flow
+npm run e2e                 # run all flows (from repo root or app/)
+bash app/e2e/run.sh app/e2e/flows/recipe-edit-opens-prepopulated-chat.yaml   # single flow
 ```
 
 Prerequisites (one-time):

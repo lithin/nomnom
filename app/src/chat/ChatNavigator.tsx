@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { useTheme } from "tamagui/native";
 
+import { RecipeDetailsScreen } from "../recipes/RecipeDetailsScreen";
+import { getRecipeDetailsScreenOptions } from "../recipes/recipeDetailsScreenOptions";
+import type { Recipe } from "../recipes/types";
 import { ChatHistoryScreen } from "./ChatHistoryScreen";
 import { ChatScreen } from "./ChatScreen";
 import { useChat } from "./useChat";
@@ -11,6 +14,9 @@ import { useChat } from "./useChat";
 type ChatStackParamList = {
   ChatMain: { chatId?: string } | undefined;
   ChatHistory: undefined;
+  // Reachable by tapping a recipe:// link in a chat message; kept in this stack
+  // so its back button returns to the conversation rather than the recipe list.
+  RecipeDetails: { recipe: Recipe };
 };
 
 const Stack = createNativeStackNavigator<ChatStackParamList>();
@@ -136,6 +142,12 @@ export function ChatNavigator() {
           />
         )}
       </Stack.Screen>
+
+      <Stack.Screen
+        name="RecipeDetails"
+        component={RecipeDetailsScreen}
+        options={getRecipeDetailsScreenOptions(theme)}
+      />
     </Stack.Navigator>
   );
 }

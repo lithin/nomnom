@@ -1,13 +1,40 @@
+import { useNavigation } from "@react-navigation/native";
 import { memo, useEffect, useRef } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { Card, Text, useTheme, YStack } from "tamagui/native";
 
+import { fetchRecipe } from "../../recipes/api";
 import type { Message } from "../types";
+
+const RECIPE_LINK_SCHEME = "recipe://";
 
 const MessageItem = memo(({ item }: { item: Message }) => {
   const theme = useTheme();
+  // biome-ignore lint/suspicious/noExplicitAny: needed for navigation typing
+  const navigation = useNavigation<any>();
   const isUser = item.role === "user";
+
+  const handleLinkPress = (url: string): boolean => {
+    if (!url.startsWith(RECIPE_LINK_SCHEME)) {
+      return true;
+    }
+
+    const id = url.slice(RECIPE_LINK_SCHEME.length);
+    void (async () => {
+      try {
+        const recipe = await fetchRecipe(id);
+        // Push within the Chat stack (not the Recipes tab) so the details
+        // screen's back button returns to this conversation.
+        navigation.navigate("RecipeDetails", { recipe });
+      } catch (error) {
+        console.error("Failed to open recipe link:", error);
+        Alert.alert("Recipe not found", "This recipe may have been deleted.");
+      }
+    })();
+
+    return false;
+  };
 
   const markdownStyles = StyleSheet.create({
     body: {
@@ -46,7 +73,8 @@ const MessageItem = memo(({ item }: { item: Message }) => {
       height: 1,
       marginVertical: 10,
     },
-    link: { color: theme.accent.val as string },
+    // Assistant bubbles use the accent background, so accent-colored links would be invisible
+    link: { color: theme.color.val as string, textDecorationLine: "underline" },
   });
 
   return (
@@ -64,7 +92,9 @@ const MessageItem = memo(({ item }: { item: Message }) => {
           {item.text}
         </Text>
       ) : (
-        <Markdown style={markdownStyles}>{item.text}</Markdown>
+        <Markdown style={markdownStyles} onLinkPress={handleLinkPress}>
+          {item.text}
+        </Markdown>
       )}
     </Card>
   );

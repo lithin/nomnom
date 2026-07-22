@@ -118,6 +118,72 @@ describe("GET /recipes", () => {
   });
 });
 
+describe("GET /recipes/:id", () => {
+  beforeEach(() => {
+    resetTestDb();
+  });
+
+  it("rejects requests without a valid API key", async () => {
+    const recipe = await seedLinkedRecipe();
+    await request(app).get(`/recipes/${recipe.id}`).expect(401);
+    await request(app).get(`/recipes/${recipe.id}`).set("x-api-key", "wrong-key").expect(401);
+  });
+
+  it("returns the recipe with its tags flattened to names", async () => {
+    const linked = await seedLinkedRecipe();
+
+    const response = await request(app)
+      .get(`/recipes/${linked.id}`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+
+    expect(response.body.id).toBe(linked.id);
+    expect(response.body.title).toBe("Carbonara");
+    expect(response.body.chatSessionId).toBe(linked.chatSessionId);
+    expect(Array.isArray(response.body.tags)).toBe(true);
+  });
+
+  it("responds 404 for an unknown id", async () => {
+    await request(app)
+      .get("/recipes/00000000-0000-0000-0000-000000000000")
+      .set("x-api-key", API_KEY)
+      .expect(404);
+  });
+
+  it("backfills a chatSessionId for a recipe without one", async () => {
+    const unlinked = await seedUnlinkedRecipe();
+
+    const response = await request(app)
+      .get(`/recipes/${unlinked.id}`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+
+    expect(response.body.chatSessionId).toBeTruthy();
+
+    // A persisted session, not a throwaway id.
+    const session = await testDb.chatSession.findUnique({
+      where: { id: response.body.chatSessionId },
+    });
+    expect(session).not.toBeNull();
+  });
+
+  it("backfills at most once: repeated fetches keep the same chatSessionId", async () => {
+    const unlinked = await seedUnlinkedRecipe();
+
+    const first = await request(app)
+      .get(`/recipes/${unlinked.id}`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+    const second = await request(app)
+      .get(`/recipes/${unlinked.id}`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+
+    expect(second.body.chatSessionId).toBe(first.body.chatSessionId);
+    expect(await testDb.chatSession.count()).toBe(1);
+  });
+});
+
 describe("DELETE /recipes/:id", () => {
   beforeEach(() => {
     resetTestDb();
