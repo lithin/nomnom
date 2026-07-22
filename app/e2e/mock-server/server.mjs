@@ -1,5 +1,5 @@
 // Dependency-free mock of the nomnom backend for e2e tests.
-// The app is pointed here via EXPO_PUBLIC_API_URL (see e2e/run.sh).
+// The app is pointed here via EXPO_PUBLIC_API_URL (see app/e2e/run.sh).
 // Response shapes mirror backend/src/endpoints/*; state is in-memory and
 // resets on every server start so each e2e run begins from the same fixtures.
 import { createServer } from "node:http";
@@ -100,9 +100,22 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const deleteRecipeMatch = pathname.match(/^\/recipes\/([^/]+)$/);
-  if (req.method === "DELETE" && deleteRecipeMatch) {
-    state.recipes = state.recipes.filter((r) => r.id !== deleteRecipeMatch[1]);
+  const recipeByIdMatch = pathname.match(/^\/recipes\/([^/]+)$/);
+
+  // GET /recipes/:id returns the recipe object directly (no envelope) — the app
+  // calls this when a recipe:// link is tapped in chat (see recipes/api.ts).
+  if (req.method === "GET" && recipeByIdMatch) {
+    const recipe = state.recipes.find((r) => r.id === recipeByIdMatch[1]);
+    if (!recipe) {
+      sendJson(res, 404, { error: "Recipe not found" });
+      return;
+    }
+    sendJson(res, 200, recipe);
+    return;
+  }
+
+  if (req.method === "DELETE" && recipeByIdMatch) {
+    state.recipes = state.recipes.filter((r) => r.id !== recipeByIdMatch[1]);
     sendJson(res, 200, { success: true });
     return;
   }
@@ -131,7 +144,15 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && pathname === "/chat") {
     const body = await readBody(req);
     const chatId = body.chatId ?? CHAT_SESSION_ID;
-    sendJson(res, 200, { reply: "Mock reply: noted!", chatId });
+    // Mirror the "surface existing recipes" feature: the assistant replies by
+    // surfacing the saved recipe as a recipe:// link the app makes tappable. The
+    // reply is just the link so the rendered message bubble's text node is
+    // exactly the recipe title — matchable and tappable by Maestro (a link
+    // embedded in a sentence merges into the paragraph's text node).
+    sendJson(res, 200, {
+      reply: `[${recipeFixture.title}](recipe://${RECIPE_ID})`,
+      chatId,
+    });
     return;
   }
 

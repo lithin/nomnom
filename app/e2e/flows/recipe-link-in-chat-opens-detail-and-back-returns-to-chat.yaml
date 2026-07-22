@@ -1,0 +1,35 @@
+# Regression test: tapping a recipe:// link in a chat message opens that recipe's
+# detail screen, and the detail's back button returns to the conversation
+# (RecipeDetails is registered in the Chat stack), not the recipes list.
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+# Launch opens on the Chat tab in a new, empty chat. Ask a question; the mock
+# backend replies by surfacing the saved recipe as a recipe:// link. The message
+# text deliberately avoids the recipe title so the only "Lemon Pancakes" on
+# screen is the link in the reply.
+- tapOn: "Type your message"
+- inputText: "Any breakfast ideas?"
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "Lemon Pancakes"
+    timeout: 15000
+- tapOn: "Lemon Pancakes"
+# Correct recipe detail: its body content (never shown in the chat link) appears.
+- extendedWaitUntil:
+    visible: ".*Fry until golden.*"
+    timeout: 15000
+# Tap the header back button (top-left "‹ Chat"). Tapped by position: its label
+# duplicates the "Chat" tab, and Maestro's `back`/edge-swipe do not reliably pop
+# a react-native-screens native stack on iOS. If the fix regressed (link opened
+# the Recipes tab), back would land on the recipes list and the message below
+# would not be visible.
+- tapOn:
+    point: 7%, 9%
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Any breakfast ideas?"
+    timeout: 15000
+- assertNotVisible: ".*Fry until golden.*"

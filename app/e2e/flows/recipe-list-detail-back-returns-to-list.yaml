@@ -1,0 +1,31 @@
+# Regression test: opening a recipe from the Recipes list shows its detail, and
+# the detail's back button returns to the list (RecipeDetails opened from the
+# Recipes stack), not the chat.
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+# Tab bar items expose accessibility text like "Recipes, tab, 2 of 2".
+- tapOn: "Recipes, tab.*"
+- extendedWaitUntil:
+    visible: "Lemon Pancakes"
+    timeout: 15000
+- tapOn: "Lemon Pancakes"
+# On the detail screen: its body content (not rendered on the list card) appears.
+- extendedWaitUntil:
+    visible: ".*Fry until golden.*"
+    timeout: 15000
+# Tap the header back button (top-left "‹ Recipes"). Tapped by position: its
+# label duplicates the "Recipes" tab, and Maestro's `back`/edge-swipe do not
+# reliably pop a react-native-screens native stack on iOS.
+- tapOn:
+    point: 7%, 9%
+- waitForAnimationToEnd
+# Back returns to the recipes list: the list item is visible again and the detail
+# body content is gone. If detail opened from the list ever routed back to chat,
+# the list item would not be visible here.
+- extendedWaitUntil:
+    visible: "Lemon Pancakes"
+    timeout: 15000
+- assertNotVisible: ".*Fry until golden.*"

@@ -24,10 +24,9 @@ const MessageItem = memo(({ item }: { item: Message }) => {
     void (async () => {
       try {
         const recipe = await fetchRecipe(id);
-        navigation.getParent()?.navigate("Recipes", {
-          screen: "RecipeDetails",
-          params: { recipe },
-        });
+        // Push within the Chat stack (not the Recipes tab) so the details
+        // screen's back button returns to this conversation.
+        navigation.navigate("RecipeDetails", { recipe });
       } catch (error) {
         console.error("Failed to open recipe link:", error);
         Alert.alert("Recipe not found", "This recipe may have been deleted.");

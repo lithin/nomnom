@@ -2,6 +2,10 @@
 # Use from flows via: runFlow: { file: common/launch-app.yaml }
 appId: host.exp.Exponent
 ---
+# Stop Expo Go first so every flow cold-starts on the Chat tab. Without this a
+# second flow's openLink just foregrounds the app wherever the previous flow
+# left it, so only the first flow would start from a known state.
+- stopApp
 # disableOnboarding asks Expo Go to skip its developer-menu onboarding sheet.
 - openLink: exp://127.0.0.1:${METRO_PORT}?disableOnboarding=1
 # Wait for the JS bundle to load; the app opens on the Chat tab.
