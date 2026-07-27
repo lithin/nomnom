@@ -30,6 +30,36 @@ resource "google_artifact_registry_repository" "backend_images" {
   description   = "Backend container images"
   format        = "DOCKER"
 
+  # KEEP policies take precedence over DELETE, so the newest images are always
+  # protected regardless of the age-based delete rule below.
+  cleanup_policies {
+    id     = "keep-recent-versions"
+    action = "KEEP"
+
+    most_recent_versions {
+      keep_count = 10
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-untagged"
+    action = "DELETE"
+
+    condition {
+      tag_state  = "UNTAGGED"
+      older_than = "604800s" # 7 days
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-old-versions"
+    action = "DELETE"
+
+    condition {
+      older_than = "2592000s" # 30 days
+    }
+  }
+
   depends_on = [google_project_service.required_apis]
 }
 
