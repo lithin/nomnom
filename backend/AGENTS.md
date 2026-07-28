@@ -1,7 +1,8 @@
-# Backend
+# Backend (Express / Prisma / Neon Postgres)
 
-Each endpoint should live in its own file. Shared and general logic should be separated out into their own files.
+The shared code-organization rules in the root `AGENTS.md` apply here too. This
+file adds backend specifics.
 
-General functions that are re-used across various files should be extracted into their own files.
-
-Ensure that all data saved in the DB has related Prisma schema. Always prefer Prisma helper queries over raw queries where practical.
+- Each API endpoint lives in its own file under `src/endpoints/`.
+- All data saved to the DB must have a corresponding Prisma schema. Prefer Prisma helper queries over raw queries where practical.
+- When you change or add an endpoint, update the e2e mock server (`e2e/mock-server/server.mjs`) so its response shapes still mirror `backend/src/endpoints/*` — the two must move together (see `e2e/README.md`).

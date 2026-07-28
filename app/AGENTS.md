@@ -1,5 +1,8 @@
-When creating any UI, split out new components into their own files if the original file where the component is added is becoming hundreds of lines long. Also split them out when they are logically separate.
+# App (React Native / Expo)
 
-Generic and widely reused hooks, logic, and components should be split out into their own files.
+The shared code-organization rules in the root `AGENTS.md` apply here too. This
+file adds UI specifics.
 
-Group things by domain insterad of by file type. Eg instead of grouping by components, group by the topic such as chat.
+## Styling
+
+Component colors must always come from the theme (`app/src/theme/config.ts`, via `useTheme()` or `$token` props) rather than hardcoded values, unless specified otherwise.
