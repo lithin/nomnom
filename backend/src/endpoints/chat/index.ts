@@ -8,6 +8,11 @@ import {
   createChatSession,
   updateChatTitle,
 } from "./chatHistory";
+import {
+  isRetriableReply,
+  looksLikeUnexecutedToolCall,
+  UNEXECUTED_TOOL_CALL_MESSAGE,
+} from "./replyGuards";
 import type { ChatRequestBody } from "./types";
 
 const extractReplyText = (content: unknown): string | null => {
@@ -119,12 +124,17 @@ export const setupChatEndpoint = (app: Router) => {
       let reply = extractReplyText(lastMessage?.content);
       let finishReason = getFinishReason(lastMessage);
 
-      if (!reply && finishReason === "MALFORMED_FUNCTION_CALL") {
+      // Gemini intermittently fails a turn - an empty completion (common on the
+      // save turn), a malformed function call, or a function call narrated as
+      // text ("tool_code"/default_api) so the tool never runs. All are transient,
+      // so re-invoke with a corrective nudge a few times before giving up.
+      const MAX_ATTEMPTS = 3;
+      for (let attempt = 1; attempt < MAX_ATTEMPTS && isRetriableReply(reply); attempt += 1) {
         result = await agent.invoke({
           messages: [
             ...agentMessages,
             new HumanMessage(
-              "Retry your previous step. If you call a tool, use valid JSON arguments with double-quoted keys and values.",
+              "Your previous response was empty or invalid. Complete your previous step now. If you need to use a tool, actually call it - do not print tool code, a `tool_code` block, or `default_api` calls as text - and use valid JSON arguments with double-quoted keys and values. Otherwise, reply normally.",
             ),
           ],
         });
@@ -140,7 +150,19 @@ export const setupChatEndpoint = (app: Router) => {
           lastMessage,
           result,
         });
-        res.status(200).json({ reply: "Could not generate response", model: MODEL_NAME });
+        res.status(200).json({ reply: "Could not generate response", model: MODEL_NAME, chatId });
+        return;
+      }
+
+      // Still narrating a tool call as text after retries: the turn is wedged
+      // (nothing was saved), so surface a clear error instead of the garble or a
+      // fabricated "saved" confirmation.
+      if (looksLikeUnexecutedToolCall(reply)) {
+        console.error(
+          "Gemini kept returning an unexecuted tool call as text after retries:",
+          reply,
+        );
+        res.status(200).json({ reply: UNEXECUTED_TOOL_CALL_MESSAGE, model: MODEL_NAME, chatId });
         return;
       }
 

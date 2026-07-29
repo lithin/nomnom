@@ -9,5 +9,5 @@ export const saveRecipe = async ({
   title: string;
   chatId: string;
 }) => {
-  await createRecipe({ title, recipe, chatId });
+  return createRecipe({ title, recipe, chatId });
 };

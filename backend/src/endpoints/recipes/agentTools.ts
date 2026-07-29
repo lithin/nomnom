@@ -8,8 +8,11 @@ import { updateRecipeTitle } from "./updateRecipeTitle";
 export const makeSaveRecipeTool = (chatId: string) =>
   tool(
     async ({ recipe, title }: { recipe: string; title: string }) => {
-      await saveRecipe({ recipe, title, chatId });
-      return "Recipe successfully saved.";
+      const { id } = await saveRecipe({ recipe, title, chatId });
+      // Hand the model a ready-made link so its confirmation can point at the
+      // saved recipe. The app renders recipe:// links and opens the detail
+      // screen on tap (see MessageList / RecipeDetails).
+      return `Recipe successfully saved. Include this link in your reply so the user can open it: [${title}](recipe://${id})`;
     },
     {
       name: "saveRecipe",
