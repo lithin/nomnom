@@ -8,18 +8,13 @@ backend (Cloud Run) and the mobile app (EAS).
 ```sh
 # from repo root, on an up-to-date master
 npm run check && npm run test:integration && npm run e2e   # gate
-npm run deploy:backend                                     # backend -> Cloud Run
-# ⚠️ MANDATORY: force Cloud Run to roll the new image (see "`:latest` tag gotcha")
-gcloud run services update nomnom-backend \
-  --image us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest \
-  --project nomnom452 --region us-west2 --quiet
+npm run deploy:backend                                     # backend -> Cloud Run (rolls + verifies the image)
 npm run --prefix app build:android:preview                 # Android preview APK (only if app changed)
 ```
 
-> ⚠️ **Read the "`:latest` tag gotcha" section before trusting a backend
-> deploy.** `npm run deploy:backend` alone does **not** reliably roll a new
-> Cloud Run revision. You must force the revision to roll and then verify the
-> serving digest.
+> ℹ️ `npm run deploy:backend` now rolls the new image and verifies the serving
+> digest for you (see the "`:latest` tag gotcha" section for why that step
+> exists and how to recover if a deploy ever serves a stale image).
 
 ## Prerequisites
 
@@ -79,7 +74,15 @@ Symptom: the deploy "succeeds", `/health` returns 200, but the new code/feature
 is missing — because a months-old revision is still serving. `/health` passing
 proves nothing: the old image is healthy too.
 
-**You must force Cloud Run to re-resolve `:latest` after every backend deploy:**
+`infra/deploy_backend.sh` handles this automatically: after `terraform apply`
+it runs `gcloud run services update <service> --image ...:latest` to force a new
+revision, then compares the live revision's digest against the pushed `:latest`
+digest and **fails the deploy** if they differ. Using the `:latest` **tag** (not
+a hardcoded digest) re-resolves to the current digest while staying consistent
+with Terraform state, so it does not cause drift.
+
+If you ever push an image out-of-band (e.g. `npm run docker:backend:push`)
+without running the full deploy, run the roll manually:
 
 ```sh
 gcloud run services update nomnom-backend \
@@ -87,14 +90,9 @@ gcloud run services update nomnom-backend \
   --project nomnom452 --region us-west2 --quiet
 ```
 
-Using the `:latest` **tag** (not a hardcoded digest) re-resolves to the current
-digest and creates a new revision, while staying consistent with what Terraform
-holds in state — so it does not cause Terraform drift.
-
-> Proper fix (not yet applied): tag images by git SHA and pass that into
-> `infra/terraform.tfvars` `container_image`, or add the `gcloud run services
-> update` step above to `infra/deploy_backend.sh`. Until then, this manual roll
-> is mandatory.
+> A cleaner long-term fix would be to tag images by git SHA and thread that into
+> `infra/terraform.tfvars` `container_image`, so Terraform itself rolls the
+> revision. The tag-based roll above is the pragmatic version in place today.
 
 ### Verify the backend is actually serving the new image
 

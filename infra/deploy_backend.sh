@@ -94,5 +94,41 @@ echo "Applying Terraform..."
 terraform -chdir="${SCRIPT_DIR}" init
 terraform -chdir="${SCRIPT_DIR}" apply -auto-approve
 
+# Terraform's container_image is the immutable ':latest' tag string, so
+# `terraform apply` never rolls a new Cloud Run revision just because a new image
+# was pushed to that tag — Cloud Run stays pinned to the previously resolved
+# digest and silently keeps serving the old image. Force it to re-resolve
+# ':latest' into a fresh revision. Using the tag (not a digest) keeps this
+# consistent with Terraform state, so it does not introduce drift.
+SERVICE_NAME="$(extract_tfvar service_name)"
+if [[ -z "${SERVICE_NAME}" ]]; then
+  SERVICE_NAME="nomnom-backend"
+fi
+
+echo "Rolling Cloud Run service ${SERVICE_NAME} to the freshly pushed ${CONTAINER_IMAGE}..."
+gcloud run services update "${SERVICE_NAME}" \
+  --image "${CONTAINER_IMAGE}" \
+  --project "${PROJECT_ID}" \
+  --region "${REGION}" \
+  --quiet
+
+echo "Verifying the live revision is serving the pushed image..."
+LATEST_DIGEST="$(gcloud artifacts docker images describe "${CONTAINER_IMAGE}" \
+  --project "${PROJECT_ID}" --format='value(image_summary.digest)' 2>/dev/null || true)"
+LIVE_REV="$(gcloud run services describe "${SERVICE_NAME}" \
+  --project "${PROJECT_ID}" --region "${REGION}" \
+  --format='value(status.latestReadyRevisionName)')"
+LIVE_DIGEST="$(gcloud run revisions describe "${LIVE_REV}" \
+  --project "${PROJECT_ID}" --region "${REGION}" \
+  --format='value(status.imageDigest)')"
+echo "  pushed :latest digest: ${LATEST_DIGEST:-<unknown>}"
+echo "  live revision:         ${LIVE_REV}"
+echo "  live revision digest:  ${LIVE_DIGEST}"
+if [[ -n "${LATEST_DIGEST}" && "${LIVE_DIGEST}" != *"${LATEST_DIGEST}"* ]]; then
+  echo "ERROR: live revision digest does not match the pushed :latest digest." >&2
+  echo "The new image is not serving — investigate before trusting this deploy." >&2
+  exit 1
+fi
+
 echo "Deployment complete."
 echo "Set EXPO_PUBLIC_BACKEND_API_KEY in app env to the secret value from ${BACKEND_API_KEY_SECRET_NAME}."
