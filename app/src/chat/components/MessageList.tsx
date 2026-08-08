@@ -2,7 +2,9 @@ import { useNavigation } from "@react-navigation/native";
 import { memo, useEffect, useRef } from "react";
 import { Alert, ScrollView, StyleSheet } from "react-native";
 import Markdown from "react-native-markdown-display";
-import { Card, Text, useTheme, YStack } from "tamagui/native";
+import { Card } from "@tamagui/card";
+import { Text, useTheme } from "@tamagui/core";
+import { YStack } from "@tamagui/stacks";
 
 import { fetchRecipe } from "../../recipes/api";
 import type { Message } from "../types";
