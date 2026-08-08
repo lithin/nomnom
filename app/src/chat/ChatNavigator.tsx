@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 import { RecipeDetailsScreen } from "../recipes/RecipeDetailsScreen";
 import { getRecipeDetailsScreenOptions } from "../recipes/recipeDetailsScreenOptions";

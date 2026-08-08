@@ -4,7 +4,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 import { ChatNavigator } from "./src/chat/ChatNavigator";
 import { RecipeDetailsScreen } from "./src/recipes/RecipeDetailsScreen";
