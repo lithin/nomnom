@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useCallback, useLayoutEffect } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 import { tokens } from "../theme/config";
 import { deleteRecipe } from "./api";

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 type ChatInputProps = {
   value: string;

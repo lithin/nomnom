@@ -2,7 +2,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, StyleSheet, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 import { ChatInput } from "./components/ChatInput";
 import { MessageList } from "./components/MessageList";

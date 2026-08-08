@@ -1,4 +1,4 @@
-import { createFont, createTamagui, createTokens } from "tamagui/native";
+import { createFont, createTamagui, createTokens } from "@tamagui/core";
 
 const bodyFont = createFont({
   family: "System",
@@ -99,7 +99,7 @@ const darkTheme = {
 };
 
 export const tamaguiConfig = createTamagui({
-  defaultFont: "body",
+  settings: { defaultFont: "body" },
   fonts: { body: bodyFont },
   tokens,
   themes: {
@@ -112,6 +112,6 @@ export const tamaguiConfig = createTamagui({
 
 export type AppConfig = typeof tamaguiConfig;
 
-declare module "tamagui" {
+declare module "@tamagui/core" {
   interface TamaguiCustomConfig extends AppConfig {}
 }

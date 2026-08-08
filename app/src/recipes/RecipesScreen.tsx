@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 import { fetchRecipes } from "./api";
 import { RecipeItem } from "./components/RecipeItem";
 import type { Recipe } from "./types";

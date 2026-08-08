@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "tamagui/native";
+import { useTheme } from "@tamagui/core";
 
 import type { Recipe } from "../types";
 

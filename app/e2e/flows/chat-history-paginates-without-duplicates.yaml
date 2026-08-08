@@ -1,0 +1,29 @@
+# Regression test: the chat-history list must page through all chats as you
+# scroll (GET /chats with an advancing offset) and stay tappable, without a
+# stale-offset "load more" re-appending an earlier page. That re-append
+# previously produced duplicate React keys; loadMoreHistory now dedupes by id
+# (see ChatHistoryScreen.tsx). The mock serves >1 page of chats so scrolling
+# forces the load-more path this flow guards.
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+# Open the chat-history screen from the Chat tab header.
+- tapOn: "Open chat history"
+# First page (offset 0) renders.
+- extendedWaitUntil:
+    visible: "E2E History Chat 01"
+    timeout: 15000
+# Scroll to a chat on a later page, forcing load-more fetches (offset 10, 20).
+- scrollUntilVisible:
+    element:
+      text: "E2E History Chat 23"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "E2E History Chat 23"
+# A chat loaded via pagination opens its conversation when tapped.
+- tapOn: "E2E History Chat 23"
+- extendedWaitUntil:
+    visible: ".*Opened history chat 23.*"
+    timeout: 15000
