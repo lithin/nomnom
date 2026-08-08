@@ -41,9 +41,42 @@ const chatMessagesFixture = [
   },
 ];
 
+// More than one page (PAGE_SIZE = 10) of chat sessions so GET /chats is called
+// with an advancing offset, exercising the chat-history list's "load more"
+// pagination. Titles are unique and zero-padded so a flow can scroll to a late
+// page and confirm rows aren't duplicated (see the pagination e2e flow).
+const HISTORY_CHAT_COUNT = 23;
+const historyChatEntries = Array.from({ length: HISTORY_CHAT_COUNT }, (_, index) => {
+  const label = String(index + 1).padStart(2, "0");
+  const id = `e2e-history-chat-${label}`;
+  // Descending minute keeps a stable order independent of Map iteration.
+  const minute = String(59 - index).padStart(2, "0");
+  return [
+    id,
+    {
+      id,
+      title: `E2E History Chat ${label}`,
+      createdAt: `2026-07-01T09:${minute}:00.000Z`,
+      messages: [
+        {
+          id: `${id}-message-1`,
+          chatId: id,
+          role: "user",
+          text: `Opened history chat ${label}.`,
+          createdAt: `2026-07-01T09:${minute}:01.000Z`,
+        },
+      ],
+    },
+  ];
+});
+
 const buildInitialState = () => ({
   recipes: [{ ...recipeFixture }],
   chatSessions: new Map([
+    ...historyChatEntries.map(([id, session]) => [
+      id,
+      { ...session, messages: session.messages.map((message) => ({ ...message })) },
+    ]),
     [
       CHAT_SESSION_ID,
       {
@@ -121,12 +154,21 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && pathname === "/chats") {
-    const chats = [...state.chatSessions.values()].map(({ id, title, createdAt }) => ({
+    // Mirror backend/src/endpoints/chats: cap limit at 50, page via offset, and
+    // report hasMore from the total count so the client keeps loading pages.
+    const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 10, 0), 50);
+    const offset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
+    const all = [...state.chatSessions.values()];
+    const chats = all.slice(offset, offset + limit).map(({ id, title, createdAt }) => ({
       id,
       title,
       createdAt,
     }));
-    sendJson(res, 200, { chats, totalCount: chats.length, hasMore: false });
+    sendJson(res, 200, {
+      chats,
+      totalCount: all.length,
+      hasMore: offset + chats.length < all.length,
+    });
     return;
   }
 

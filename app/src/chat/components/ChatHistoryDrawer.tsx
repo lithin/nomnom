@@ -94,7 +94,13 @@ export const ChatHistoryDrawer = ({
     try {
       const offset = historyOffset;
       const nextPage = await getChatsPage({ limit: PAGE_SIZE, offset });
-      setChatHistory((previous) => [...previous, ...nextPage.chats]);
+      // Dedupe by id: a re-fired effect (dev double-invoke) or overlapping
+      // page can otherwise append rows already in the list, producing
+      // duplicate React keys.
+      setChatHistory((previous) => {
+        const seen = new Set(previous.map((chat) => chat.id));
+        return [...previous, ...nextPage.chats.filter((chat) => !seen.has(chat.id))];
+      });
       setHistoryOffset(offset + nextPage.chats.length);
       setHasMoreHistory(nextPage.hasMore);
     } catch (error) {
