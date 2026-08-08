@@ -18,6 +18,8 @@ Backend integration tests call the real Express app over HTTP and assert respons
 
 ## Before creating a PR
 
+Keep each PR to a single logical change. If the working changes cover several unrelated things — e.g. a dependency upgrade plus an unrelated bug fix — split them into separate PRs (separate branches off `master`) so each can be reviewed, and reverted, on its own.
+
 Before creating a pull request, run the backend integration tests and the full e2e suite locally and make sure both pass:
 
 ```sh
