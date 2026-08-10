@@ -13,6 +13,7 @@ import {
   looksLikeUnexecutedToolCall,
   UNEXECUTED_TOOL_CALL_MESSAGE,
 } from "./replyGuards";
+import { ensureSavedRecipeLink, findSavedRecipeLink } from "./savedRecipeLink";
 import type { ChatRequestBody } from "./types";
 
 const extractReplyText = (content: unknown): string | null => {
@@ -165,6 +166,11 @@ export const setupChatEndpoint = (app: Router) => {
         res.status(200).json({ reply: UNEXECUTED_TOOL_CALL_MESSAGE, model: MODEL_NAME, chatId });
         return;
       }
+
+      // The saveRecipe tool returns a [Title](recipe://id) link, but Gemini often
+      // omits it from the confirmation. Enforce it here so a saved recipe is
+      // always openable, instead of relying on the model to echo the link.
+      reply = ensureSavedRecipeLink(reply, findSavedRecipeLink(result.messages));
 
       await appendChatMessages([
         {

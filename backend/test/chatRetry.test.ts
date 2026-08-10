@@ -23,6 +23,18 @@ const EMPTY = agentResult([]);
 const GARBLE = agentResult("```tool_code\nprint(default_api.saveRecipe())\n```");
 const clean = (text: string) => agentResult(text);
 
+// A turn where the saveRecipe tool ran (its ToolMessage carries the ready-made
+// link) and the model then produced `reply` as its final message.
+const savedResult = (reply: string, id: string) => ({
+  messages: [
+    {
+      name: "saveRecipe",
+      content: `Recipe successfully saved. Include this link in your reply so the user can open it: [Eggs](recipe://${id})`,
+    },
+    { content: reply },
+  ],
+});
+
 const sendChat = () =>
   request(app)
     .post("/chat")
@@ -89,5 +101,24 @@ describe("POST /chat retry loop", () => {
     expect(res.body.reply).toBe(UNEXECUTED_TOOL_CALL_MESSAGE);
     expect(mockInvoke).toHaveBeenCalledTimes(3);
     expect(await testDb.chatMessage.count({ where: { role: "assistant" } })).toBe(0);
+  });
+
+  it("appends the saved-recipe link when the model reply omits it", async () => {
+    mockInvoke.mockResolvedValueOnce(savedResult("Saved! Enjoy your dinner.", "abc-123"));
+
+    const res = await sendChat();
+
+    expect(res.body.reply).toBe("Saved! Enjoy your dinner.\n\n[Eggs](recipe://abc-123)");
+    // The enforced link is persisted to chat history, not just the response.
+    const messages = await testDb.chatMessage.findMany({ where: { role: "assistant" } });
+    expect(messages[0].text).toBe("Saved! Enjoy your dinner.\n\n[Eggs](recipe://abc-123)");
+  });
+
+  it("does not duplicate the link when the model already included it", async () => {
+    mockInvoke.mockResolvedValueOnce(savedResult("Saved it: [Eggs](recipe://abc-123)", "abc-123"));
+
+    const res = await sendChat();
+
+    expect(res.body.reply).toBe("Saved it: [Eggs](recipe://abc-123)");
   });
 });
