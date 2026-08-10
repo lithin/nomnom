@@ -24,6 +24,26 @@ const recipeFixture = {
   tags: ["breakfast"],
 };
 
+// Image picker candidates. fullUrl uses the Unsplash image host the backend
+// PATCH endpoint requires; the images themselves need not load for the flow —
+// tiles are tapped by testID (see recipes/ImagePickerScreen.tsx).
+const imageOptionsFixture = [
+  {
+    id: "e2e-image-1",
+    thumbUrl: "https://images.unsplash.com/e2e-1?w=200",
+    fullUrl: "https://images.unsplash.com/e2e-1?w=1080",
+    alt: "Lemon pancakes on a plate",
+    credit: "E2E Photographer",
+  },
+  {
+    id: "e2e-image-2",
+    thumbUrl: "https://images.unsplash.com/e2e-2?w=200",
+    fullUrl: "https://images.unsplash.com/e2e-2?w=1080",
+    alt: "A stack of pancakes",
+    credit: "E2E Photographer",
+  },
+];
+
 const chatMessagesFixture = [
   {
     id: `${RECIPE_ID}-history-1`,
@@ -100,6 +120,20 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // GET /recipes/:id/image-options returns Unsplash-style candidates the image
+  // picker offers (see backend/src/endpoints/recipes/index.ts). Matched before
+  // the single-segment /recipes/:id route since it has an extra path segment.
+  const imageOptionsMatch = pathname.match(/^\/recipes\/([^/]+)\/image-options$/);
+  if (req.method === "GET" && imageOptionsMatch) {
+    const recipe = state.recipes.find((r) => r.id === imageOptionsMatch[1]);
+    if (!recipe) {
+      sendJson(res, 404, { error: "Recipe not found" });
+      return;
+    }
+    sendJson(res, 200, { options: imageOptionsFixture });
+    return;
+  }
+
   const recipeByIdMatch = pathname.match(/^\/recipes\/([^/]+)$/);
 
   // GET /recipes/:id returns the recipe object directly (no envelope) — the app
@@ -110,6 +144,24 @@ const server = createServer(async (req, res) => {
       sendJson(res, 404, { error: "Recipe not found" });
       return;
     }
+    sendJson(res, 200, recipe);
+    return;
+  }
+
+  // PATCH /recipes/:id sets the chosen image and returns the updated recipe
+  // (tags already flattened), mirroring the backend PATCH endpoint.
+  if (req.method === "PATCH" && recipeByIdMatch) {
+    const recipe = state.recipes.find((r) => r.id === recipeByIdMatch[1]);
+    if (!recipe) {
+      sendJson(res, 404, { error: "Recipe not found" });
+      return;
+    }
+    const body = await readBody(req);
+    if (typeof body.imageUrl !== "string") {
+      sendJson(res, 400, { error: "Invalid imageUrl" });
+      return;
+    }
+    recipe.imageUrl = body.imageUrl;
     sendJson(res, 200, recipe);
     return;
   }

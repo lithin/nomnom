@@ -1,0 +1,35 @@
+# Regression test: from a recipe's detail screen, the image (picture) header
+# button opens the image picker, and tapping a candidate returns to the detail
+# screen (the PATCH succeeded and we navigated back, rather than staying on the
+# picker with an error alert).
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+# Tab bar items expose accessibility text like "Recipes, tab, 2 of 2".
+- tapOn: "Recipes, tab.*"
+- extendedWaitUntil:
+    visible: "Lemon Pancakes"
+    timeout: 15000
+- tapOn: "Lemon Pancakes"
+# On the detail screen: its body content (not rendered on the list card) appears.
+- extendedWaitUntil:
+    visible: ".*Fry until golden.*"
+    timeout: 15000
+# Open the image picker from the header. The picture icon has no text, so it is
+# matched by its accessibility label (Maestro text-matches labels).
+- tapOn: "Change recipe image"
+- extendedWaitUntil:
+    visible: "Choose Image"
+    timeout: 15000
+# Tap the first candidate tile (tiles carry testID image-option-<index>).
+- tapOn:
+    id: "image-option-0"
+- waitForAnimationToEnd
+# Selecting an image PATCHes and navigates back to the detail screen; its body
+# content is visible again. On failure we'd stay on the picker with an alert.
+- extendedWaitUntil:
+    visible: ".*Fry until golden.*"
+    timeout: 15000
+- assertVisible: "Recipe Details"
