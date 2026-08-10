@@ -7,3 +7,11 @@ export interface Recipe {
   chatSessionId?: string | null;
   tags?: string[];
 }
+
+export interface RecipeImageOption {
+  id: string;
+  thumbUrl: string;
+  fullUrl: string;
+  alt: string | null;
+  credit: string | null;
+}

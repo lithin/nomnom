@@ -3,8 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/shared/db", () => import("./testDb"));
 
+// Mock only the network-calling search, keeping the real UNSPLASH_IMAGE_HOST so
+// the PATCH endpoint's URL validation stays exercised.
+vi.mock("../src/endpoints/recipes/searchRecipeImages", async (importActual) => {
+  const actual = await importActual<typeof import("../src/endpoints/recipes/searchRecipeImages")>();
+  return { ...actual, searchRecipeImages: vi.fn() };
+});
+
 import { createApp } from "../src/app";
+import { searchRecipeImages } from "../src/endpoints/recipes/searchRecipeImages";
 import { resetTestDb, testDb } from "./testDb";
+
+const mockedSearch = vi.mocked(searchRecipeImages);
 
 const app = createApp();
 const API_KEY = "test-api-key";
@@ -196,5 +206,120 @@ describe("DELETE /recipes/:id", () => {
 
     const remaining = await testDb.recipe.count();
     expect(remaining).toBe(0);
+  });
+});
+
+describe("GET /recipes/:id/image-options", () => {
+  beforeEach(() => {
+    resetTestDb();
+    mockedSearch.mockReset();
+  });
+
+  it("rejects requests without a valid API key", async () => {
+    const recipe = await seedLinkedRecipe();
+    await request(app).get(`/recipes/${recipe.id}/image-options`).expect(401);
+  });
+
+  it("returns Unsplash options searched by the recipe title", async () => {
+    const recipe = await seedLinkedRecipe();
+    mockedSearch.mockResolvedValue([
+      {
+        id: "photo-1",
+        thumbUrl: "https://images.unsplash.com/photo-1?w=200",
+        fullUrl: "https://images.unsplash.com/photo-1",
+        alt: "A bowl of carbonara",
+        credit: "Jane Doe",
+      },
+    ]);
+
+    const response = await request(app)
+      .get(`/recipes/${recipe.id}/image-options`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+
+    expect(mockedSearch).toHaveBeenCalledWith("Carbonara", 30);
+    expect(response.body.options).toHaveLength(1);
+    expect(response.body.options[0].fullUrl).toBe("https://images.unsplash.com/photo-1");
+  });
+
+  it("returns an empty list when Unsplash has no matches", async () => {
+    const recipe = await seedLinkedRecipe();
+    mockedSearch.mockResolvedValue([]);
+
+    const response = await request(app)
+      .get(`/recipes/${recipe.id}/image-options`)
+      .set("x-api-key", API_KEY)
+      .expect(200);
+
+    expect(response.body.options).toEqual([]);
+  });
+
+  it("responds 404 for an unknown id without searching", async () => {
+    await request(app)
+      .get("/recipes/00000000-0000-0000-0000-000000000000/image-options")
+      .set("x-api-key", API_KEY)
+      .expect(404);
+
+    expect(mockedSearch).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /recipes/:id", () => {
+  const IMAGE_URL = "https://images.unsplash.com/photo-1?w=1080";
+
+  beforeEach(() => {
+    resetTestDb();
+  });
+
+  it("rejects requests without a valid API key", async () => {
+    const recipe = await seedLinkedRecipe();
+    await request(app).patch(`/recipes/${recipe.id}`).send({ imageUrl: IMAGE_URL }).expect(401);
+  });
+
+  it("persists a chosen Unsplash image and returns the updated recipe", async () => {
+    const recipe = await seedLinkedRecipe();
+
+    const response = await request(app)
+      .patch(`/recipes/${recipe.id}`)
+      .set("x-api-key", API_KEY)
+      .send({ imageUrl: IMAGE_URL })
+      .expect(200);
+
+    expect(response.body.imageUrl).toBe(IMAGE_URL);
+    expect(Array.isArray(response.body.tags)).toBe(true);
+
+    const stored = await testDb.recipe.findUnique({ where: { id: recipe.id } });
+    expect(stored?.imageUrl).toBe(IMAGE_URL);
+  });
+
+  it("rejects an imageUrl from a non-Unsplash host", async () => {
+    const recipe = await seedLinkedRecipe();
+
+    await request(app)
+      .patch(`/recipes/${recipe.id}`)
+      .set("x-api-key", API_KEY)
+      .send({ imageUrl: "https://evil.example.com/photo.jpg" })
+      .expect(400);
+
+    const stored = await testDb.recipe.findUnique({ where: { id: recipe.id } });
+    expect(stored?.imageUrl).toBeNull();
+  });
+
+  it("rejects a missing imageUrl", async () => {
+    const recipe = await seedLinkedRecipe();
+
+    await request(app)
+      .patch(`/recipes/${recipe.id}`)
+      .set("x-api-key", API_KEY)
+      .send({})
+      .expect(400);
+  });
+
+  it("responds 404 for an unknown id", async () => {
+    await request(app)
+      .patch("/recipes/00000000-0000-0000-0000-000000000000")
+      .set("x-api-key", API_KEY)
+      .send({ imageUrl: IMAGE_URL })
+      .expect(404);
   });
 });

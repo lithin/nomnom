@@ -1,0 +1,15 @@
+import type { NativeStackNavigationOptions } from "@react-navigation/native-stack";
+import type { useTheme } from "tamagui/native";
+
+import { tokens } from "../theme/config";
+
+type Theme = ReturnType<typeof useTheme>;
+
+// Shared so the image picker looks identical whether it's pushed from the
+// Recipes stack or from the Chat stack (both register RecipeDetails too).
+export const getImagePickerScreenOptions = (theme: Theme): NativeStackNavigationOptions => ({
+  title: "Choose Image",
+  headerStyle: { backgroundColor: theme.backgroundSecondary.val as string },
+  headerTintColor: tokens.color.darkOlive.val as string,
+  headerTitleStyle: { color: theme.titleText.val as string },
+});

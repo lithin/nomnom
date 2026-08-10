@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { useTheme } from "@tamagui/core";
 
+import { ImagePickerScreen } from "../recipes/ImagePickerScreen";
+import { getImagePickerScreenOptions } from "../recipes/imagePickerScreenOptions";
 import { RecipeDetailsScreen } from "../recipes/RecipeDetailsScreen";
 import { getRecipeDetailsScreenOptions } from "../recipes/recipeDetailsScreenOptions";
 import type { Recipe } from "../recipes/types";
@@ -17,6 +19,7 @@ type ChatStackParamList = {
   // Reachable by tapping a recipe:// link in a chat message; kept in this stack
   // so its back button returns to the conversation rather than the recipe list.
   RecipeDetails: { recipe: Recipe };
+  ImagePicker: { recipeId: string };
 };
 
 const Stack = createNativeStackNavigator<ChatStackParamList>();
@@ -147,6 +150,12 @@ export function ChatNavigator() {
         name="RecipeDetails"
         component={RecipeDetailsScreen}
         options={getRecipeDetailsScreenOptions(theme)}
+      />
+
+      <Stack.Screen
+        name="ImagePicker"
+        component={ImagePickerScreen}
+        options={getImagePickerScreenOptions(theme)}
       />
     </Stack.Navigator>
   );

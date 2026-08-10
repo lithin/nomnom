@@ -7,6 +7,8 @@ import { StyleSheet, View } from "react-native";
 import { useTheme } from "@tamagui/core";
 
 import { ChatNavigator } from "./src/chat/ChatNavigator";
+import { ImagePickerScreen } from "./src/recipes/ImagePickerScreen";
+import { getImagePickerScreenOptions } from "./src/recipes/imagePickerScreenOptions";
 import { RecipeDetailsScreen } from "./src/recipes/RecipeDetailsScreen";
 import { RecipesScreen } from "./src/recipes/RecipesScreen";
 import { getRecipeDetailsScreenOptions } from "./src/recipes/recipeDetailsScreenOptions";
@@ -33,6 +35,11 @@ function RecipesStack() {
         name="RecipeDetails"
         component={RecipeDetailsScreen}
         options={getRecipeDetailsScreenOptions(theme)}
+      />
+      <Stack.Screen
+        name="ImagePicker"
+        component={ImagePickerScreen}
+        options={getImagePickerScreenOptions(theme)}
       />
     </Stack.Navigator>
   );

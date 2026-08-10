@@ -41,6 +41,14 @@ export function RecipeDetailsScreen() {
     });
   }, [navigation, recipe]);
 
+  const handleChangeImage = useCallback(() => {
+    if (!recipe) {
+      return;
+    }
+
+    navigation.navigate("ImagePicker", { recipeId: recipe.id });
+  }, [navigation, recipe]);
+
   const handleDelete = useCallback(() => {
     if (!recipe) {
       return;
@@ -74,6 +82,14 @@ export function RecipeDetailsScreen() {
       headerRight: () => (
         <View style={styles.headerActions}>
           <PlatformPressable
+            onPress={handleChangeImage}
+            style={styles.headerIconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Change recipe image"
+          >
+            <Ionicons name="image-outline" size={22} color={tokens.color.darkOlive.val as string} />
+          </PlatformPressable>
+          <PlatformPressable
             onPress={handleEdit}
             style={styles.headerIconButton}
             accessibilityRole="button"
@@ -96,7 +112,7 @@ export function RecipeDetailsScreen() {
         </View>
       ),
     });
-  }, [navigation, handleDelete, handleEdit, recipe]);
+  }, [navigation, handleDelete, handleEdit, handleChangeImage, recipe]);
 
   if (!recipe) return null;
 
