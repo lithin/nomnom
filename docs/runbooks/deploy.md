@@ -9,8 +9,17 @@ backend (Cloud Run) and the mobile app (EAS).
 # from repo root, on an up-to-date master
 npm run check && npm run test:integration && npm run e2e   # gate
 npm run deploy:backend                                     # backend -> Cloud Run (rolls + verifies the image)
-npm run --prefix app build:android:preview                 # Android preview APK (only if app changed)
+
+# Android preview APK (only if app changed) — pick ONE:
+npm run --prefix app build:android:local                   # local build, no EAS queue -> app/build/nomnom-preview.apk
+npm run --prefix app build:android:preview                 # EAS cloud build (free tier may queue)
 ```
+
+> 🤝 **When deploying from latest `master`, decide the app build up front:**
+> **local** (`build:android:local`, compiles here, no queue) or **EAS cloud**
+> (`build:android:preview`, runs on Expo's servers). See
+> [§2 Build the app](#2-build-the-app-local-or-eas). If you're driving this via
+> an assistant, it should ask which one you want before building.
 
 > ℹ️ `npm run deploy:backend` now rolls the new image and verifies the serving
 > digest for you (see the "`:latest` tag gotcha" section for why that step
@@ -133,7 +142,7 @@ gcloud run services update-traffic nomnom-backend \
   --to-revisions <good-revision>=100 --project nomnom452 --region us-west2
 ```
 
-## 2. Build the app (EAS)
+## 2. Build the app (local or EAS)
 
 The app talks to the Cloud Run backend over `EXPO_PUBLIC_API_URL` (baked into
 the build profile in [app/eas.json](../../app/eas.json)). Backend-only features
@@ -142,8 +151,47 @@ need **no app rebuild** — the app just calls `/chat`.
 
 Rebuild the app only when app code, native deps, or the profile's env changed.
 
+**Pick a build path** (both use the `preview` profile, so the artifact is
+equivalent — same keystore, same `EXPO_PUBLIC_API_URL`):
+
+| | Local (`build:android:local`) | EAS cloud (`build:android:preview`) |
+|---|---|---|
+| Where it runs | This machine | Expo's servers |
+| Queue | None | Free tier can sit in the queue |
+| Time (M1 Pro) | ~12–15 min (native C++ compile) | queue + ~10 min build |
+| Needs | JDK 17 + Android SDK + `gcloud` (for the key) | Just `eas-cli` login |
+| Output | `app/build/nomnom-preview.apk` | Artifact URL from `build:list` |
+
+### 2a. Local build (no queue)
+
 ```sh
-# Android internal-distribution preview APK (the wired-up script)
+npm run --prefix app build:android:local
+# == app/scripts/build-android-local.sh (eas build --local, preview profile)
+```
+
+- Produces exactly one apk at `app/build/nomnom-preview.apk` (the `/build`
+  folder is gitignored). The previous apk is deleted only **after** a successful
+  new build, so a failed build never leaves you without the last good one.
+- **Backend wiring (the reason for the script):** the app needs both
+  `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_BACKEND_API_KEY` (sent as `x-api-key`,
+  see [app/src/backend/apiConfig.ts](../../app/src/backend/apiConfig.ts)). The
+  key lives only in `app/.env` locally (a *local* key) and `.env` is gitignored,
+  so `eas build --local` would stage the project without it and the apk couldn't
+  authenticate. The script pins the build to the **deployed** backend: the URL
+  from the `preview` profile, and the **production** key pulled from Secret
+  Manager (`nomnom452/nomnom-backend-api-key`) at build time — never committed.
+  So you must be `gcloud`-authed to `nomnom452` (same as the backend deploy).
+- The script sets `JAVA_HOME` to JDK 17 and `ANDROID_HOME` for you. RN 0.81 /
+  Expo SDK 54 require **JDK 17** — a newer default JDK will fail the Gradle
+  build. If you have no JDK 17: `brew install openjdk@17`.
+- First run is slowest (native C++ for reanimated/gesture-handler across ABIs).
+  An **arm64** JDK 17 avoids the Rosetta penalty on Apple Silicon.
+- Install to a booted device/emulator: `adb install -r app/build/nomnom-preview.apk`.
+
+### 2b. EAS cloud build
+
+```sh
+# Android internal-distribution preview APK
 npm run --prefix app build:android:preview
 # == npx eas-cli build --platform android --profile preview
 
@@ -163,6 +211,9 @@ npx eas-cli build --platform all --profile production
 npx eas-cli build:list --platform android --limit 1
 # Application Archive URL is the installable .apk
 ```
+
+> iOS and production builds have no local path here — they go through EAS
+> (`build:android:local` is Android preview only).
 
 ## The two GCP projects
 
