@@ -3,6 +3,7 @@ import { createAgent, SystemMessage } from "langchain";
 import {
   browseSavedRecipesTool,
   findSavedRecipesTool,
+  importRecipeFromUrlTool,
   makeSaveRecipeTool,
   makeUpdateRecipeTitleTool,
   makeUpdateRecipeTool,
@@ -26,6 +27,12 @@ When updating an existing recipe, state what was changed. Keep the recipe in exa
 When only changing a recipe title and the user already provided the new title, use updateRecipeTitle immediately with that title and do not ask for confirmation.
 Do not ask the user for recipe id when updating a recipe title.
 When only changing a recipe title, do not rewrite the recipe content.
+
+Importing a recipe from a link:
+- Whenever the user's message contains a URL (a web link), always call importRecipeFromUrl with that URL - even if they only pasted the link with no other words, and whether or not they mentioned saving.
+- If the tool returns recipe JSON, present that recipe in the standard recipe format (title, servings, nutrition per serving, ingredients, instructions). Use the values from the tool exactly as given - never change or re-estimate ingredients, instructions, servings, or nutrition that the tool provided. Only when the tool did not include servings or nutrition, estimate those yourself the same way you would for a new recipe.
+- After presenting the imported recipe, ask the user to confirm it looks right and whether they'd like it saved. Do not save until they explicitly approve, exactly as with any other recipe. On approval, call saveRecipe with the recipe you presented (the title and the body without the title) and then confirm with the recipe:// link.
+- If the tool says the link can't be parsed, tell the user you couldn't read a recipe from that link and stop. Do not invent a recipe.
 
 You also have access to the user's saved recipe collection:
 - When the user asks for a specific dish (e.g. "do you have a recipe for apple muffins", "I want to make lasagna"), call findSavedRecipes with the dish name before doing anything else.
@@ -51,6 +58,7 @@ export const createChatAgent = (chatId: string) => {
     makeUpdateRecipeTitleTool(chatId),
     findSavedRecipesTool,
     browseSavedRecipesTool,
+    importRecipeFromUrlTool,
   ];
 
   return createAgent({
