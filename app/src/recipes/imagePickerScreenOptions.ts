@@ -1,5 +1,5 @@
 import type { NativeStackNavigationOptions } from "@react-navigation/native-stack";
-import type { useTheme } from "tamagui/native";
+import type { useTheme } from "@tamagui/core";
 
 import { tokens } from "../theme/config";
 
