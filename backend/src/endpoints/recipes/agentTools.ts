@@ -1,5 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
+import { extractRecipeFromUrl } from "./importRecipe";
 import { saveRecipe } from "./save";
 import { browseSavedRecipes, searchSavedRecipes } from "./searchRecipes";
 import { updateRecipe } from "./updateRecipe";
@@ -75,6 +76,42 @@ export const browseSavedRecipesTool = tool(
       "Browse the user's saved recipes by theme when they ask for open-ended ideas. Returns candidate recipes as JSON with id, title, tags and tagSimilarity (0-1, higher is more similar). Use the id to build recipe links.",
     schema: z.object({
       theme: z.string().describe("Short theme, e.g. 'dinner', 'baking', 'dessert', 'quick lunch'"),
+    }),
+  },
+);
+
+// Reads a recipe from a URL's schema.org JSON-LD. Returns the structured
+// fields we found (not a saved recipe) so the agent can present them in the
+// house format, estimate only what's missing, and save via saveRecipe once the
+// user confirms. When the link has no usable recipe data, returns a plain
+// message the agent relays to the user.
+const IMPORT_UNPARSEABLE_MESSAGE =
+  "Could not read a recipe from that link. Tell the user this link can't be parsed and do not fabricate a recipe.";
+
+export const importRecipeFromUrlTool = tool(
+  async ({ url }: { url: string }) => {
+    let result: Awaited<ReturnType<typeof extractRecipeFromUrl>>;
+    try {
+      result = await extractRecipeFromUrl(url);
+    } catch {
+      // Network failure, timeout, non-OK status - treat the same as no recipe.
+      return IMPORT_UNPARSEABLE_MESSAGE;
+    }
+
+    if (!result.ok) {
+      return IMPORT_UNPARSEABLE_MESSAGE;
+    }
+
+    // Only the fields present here came from the source; anything absent (e.g.
+    // nutrition, servings) the agent should estimate, per the system prompt.
+    return JSON.stringify(result.recipe);
+  },
+  {
+    name: "importRecipeFromUrl",
+    description:
+      "Read a recipe from a web link (URL) the user shares. Returns the recipe's fields as JSON (title, ingredients, instructions, and servings/nutrition when the page provides them), or a message saying the link can't be parsed.",
+    schema: z.object({
+      url: z.string().describe("The recipe page URL the user shared."),
     }),
   },
 );
