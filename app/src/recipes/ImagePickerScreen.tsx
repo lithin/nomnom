@@ -1,4 +1,5 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "@tamagui/core";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,7 +11,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useTheme } from "tamagui/native";
 
 import { tokens } from "../theme/config";
 import { fetchImageOptions, updateRecipeImage } from "./api";
