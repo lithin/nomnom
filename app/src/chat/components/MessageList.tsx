@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import { memo, useEffect, useRef } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import Markdown from "react-native-markdown-display";
 import { Card } from "@tamagui/card";
 import { Text, useTheme } from "@tamagui/core";
@@ -16,6 +16,15 @@ const MessageItem = memo(({ item }: { item: Message }) => {
   // biome-ignore lint/suspicious/noExplicitAny: needed for navigation typing
   const navigation = useNavigation<any>();
   const isUser = item.role === "user";
+
+  // Cap the bubble at a concrete pixel width rather than a percentage. A
+  // percentage maxWidth resolves against the parent's width, which is not yet
+  // definite on the first layout pass; when it momentarily resolves to ~0 the
+  // markdown paragraph's `width: "100%"` collapses to min-content and the reply
+  // wraps into a tall, thin column that runs off the bottom of the screen. A
+  // pixel value from the window is stable from the first render.
+  const { width: windowWidth } = useWindowDimensions();
+  const bubbleMaxWidth = Math.round(windowWidth * 0.84);
 
   const handleLinkPress = (url: string): boolean => {
     if (!url.startsWith(RECIPE_LINK_SCHEME)) {
@@ -81,7 +90,7 @@ const MessageItem = memo(({ item }: { item: Message }) => {
 
   return (
     <Card
-      maxWidth="84%"
+      maxWidth={bubbleMaxWidth}
       borderRadius={14}
       paddingHorizontal="$3"
       paddingVertical="$2"
