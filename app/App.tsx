@@ -2,9 +2,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useTheme } from "@tamagui/core";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import { useTheme } from "@tamagui/core";
 
 import { ChatNavigator } from "./src/chat/ChatNavigator";
 import { ImagePickerScreen } from "./src/recipes/ImagePickerScreen";

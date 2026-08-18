@@ -1,8 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useTheme } from "@tamagui/core";
 import { useEffect } from "react";
 import { TouchableOpacity, View } from "react-native";
-import { useTheme } from "@tamagui/core";
 
 import { ImagePickerScreen } from "../recipes/ImagePickerScreen";
 import { getImagePickerScreenOptions } from "../recipes/imagePickerScreenOptions";

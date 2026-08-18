@@ -1,11 +1,12 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { PlatformPressable } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTheme } from "@tamagui/core";
 import { useCallback, useLayoutEffect } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import Markdown from "react-native-markdown-display";
-import { useTheme } from "@tamagui/core";
 
+import { markdownItInstance } from "../markdown/markdownItInstance";
 import { tokens } from "../theme/config";
 import { deleteRecipe } from "./api";
 import type { Recipe } from "./types";
@@ -146,7 +147,7 @@ export function RecipeDetailsScreen() {
         </View>
       )}
       <View style={styles.markdownContainer}>
-        <Markdown>{recipe.content}</Markdown>
+        <Markdown markdownit={markdownItInstance}>{recipe.content}</Markdown>
       </View>
     </ScrollView>
   );
