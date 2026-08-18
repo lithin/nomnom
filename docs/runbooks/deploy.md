@@ -3,6 +3,17 @@
 How to ship the latest `master` to production and cut an app build. Covers the
 backend (Cloud Run) and the mobile app (EAS).
 
+> ⛔ **Always deploy from the main checkout on `master` — never from a git
+> worktree.** Terraform uses **local state** (no remote backend) that lives only
+> in the main checkout's `infra/terraform.tfstate` (gitignored). A worktree has
+> no state, so `npm run deploy:backend` gets past the migrate + image push, then
+> `terraform apply` plans to **create** the already-existing prod infra and
+> `409`s on the Artifact Registry repo + Cloud Run service — which **skips the
+> final image roll**, leaving the new image pushed but prod still serving the old
+> revision. Before deploying: `cd /Users/annadoubkova/Workspace/nomnom && git
+> checkout master && git pull`. If you ever half-deploy from a worktree by
+> mistake, see [Recover a half-deploy](#recover-a-half-deploy-from-a-worktree).
+
 ## TL;DR
 
 ```sh
@@ -132,6 +143,29 @@ gcloud run services describe nomnom-backend --project nomnom452 --region us-west
 The revision's `imageDigest` **must equal** the `:latest` digest and its
 `creationTimestamp` should be from this deploy. If it's an old digest/timestamp,
 the roll above didn't take — re-run it.
+
+### Recover a half-deploy from a worktree
+
+If `npm run deploy:backend` was run from a git worktree (don't — see the rule at
+the top), `terraform apply` will have `409`ed and the image roll will have been
+skipped: the new image is pushed to `:latest`, but prod still serves the old
+revision. This is **not** harmful — the `409`s mean terraform tried to *create*
+already-existing resources and changed nothing; the existing service, secrets,
+and IAM bindings are untouched, and no new revision rolled out. To finish the
+deploy without re-running the whole script, do the roll manually and verify:
+
+```sh
+gcloud run services update nomnom-backend \
+  --image us-west2-docker.pkg.dev/nomnom452/nomnom/backend:latest \
+  --project nomnom452 --region us-west2 --quiet
+# then run the digest/health/traffic verification above
+```
+
+The worktree will have a bogus local `infra/terraform.tfstate` from the failed
+apply — delete it (and the `.terraform/` dir); do **not** `terraform destroy`
+from there, as its partial state would delete real IAM bindings. The main
+checkout's state is untouched and remains the source of truth. Next time, deploy
+from the main checkout on `master`.
 
 ### Rollback
 
