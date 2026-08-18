@@ -1,5 +1,5 @@
-import { useColorScheme } from "react-native";
 import { TamaguiProvider } from "@tamagui/core";
+import { useColorScheme } from "react-native";
 
 import { tamaguiConfig } from "./config";
 
