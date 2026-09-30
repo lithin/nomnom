@@ -18,14 +18,15 @@ const MessageItem = memo(({ item }: { item: Message }) => {
   const navigation = useNavigation<any>();
   const isUser = item.role === "user";
 
-  // Cap the bubble at a concrete pixel width rather than a percentage. A
-  // percentage maxWidth resolves against the parent's width, which is not yet
-  // definite on the first layout pass; when it momentarily resolves to ~0 the
-  // markdown paragraph's `width: "100%"` collapses to min-content and the reply
-  // wraps into a tall, thin column that runs off the bottom of the screen. A
-  // pixel value from the window is stable from the first render.
+  // Assistant bubbles get a fixed width instead of shrinking to fit their
+  // content. react-native-markdown-display styles list item content (and table
+  // cells) as `flex: 1`, i.e. flexBasis 0, so in a shrink-to-fit bubble they
+  // contribute no intrinsic width: the bubble sizes to its widest plain
+  // paragraph (e.g. "New ideas:"), list text wraps into a thin column, and Yoga
+  // under-measures its height so it spills out of the bubble. A definite width
+  // gives every `flex: 1` descendant a real width to fill.
   const { width: windowWidth } = useWindowDimensions();
-  const bubbleMaxWidth = Math.round(windowWidth * 0.84);
+  const bubbleWidth = Math.round(windowWidth * 0.84);
 
   const handleLinkPress = (url: string): boolean => {
     if (!url.startsWith(RECIPE_LINK_SCHEME)) {
@@ -91,7 +92,8 @@ const MessageItem = memo(({ item }: { item: Message }) => {
 
   return (
     <Card
-      maxWidth={bubbleMaxWidth}
+      maxWidth={bubbleWidth}
+      width={isUser ? undefined : bubbleWidth}
       borderRadius={14}
       paddingHorizontal="$3"
       paddingVertical="$2"

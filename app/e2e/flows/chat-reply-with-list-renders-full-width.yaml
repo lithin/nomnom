@@ -1,0 +1,19 @@
+# Regression check: an assistant reply whose long content is in markdown list
+# items must use the full bubble width. Previously the bubble shrank to its
+# widest short plain paragraph ("New ideas:") because the markdown library's
+# list content is `flex: 1` (flexBasis 0) and contributes no intrinsic width,
+# leaving list text wrapped into a thin column that spilled out of the bubble.
+# Maestro cannot assert widths, so this flow captures a screenshot to inspect.
+appId: host.exp.Exponent
+env:
+  METRO_PORT: "8082"
+---
+- runFlow: common/launch-app.yaml
+- tapOn: "Type your message"
+- inputText: "How to use up a whole bag of radishes"
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible: "Ready when you are."
+    timeout: 15000
+- waitForAnimationToEnd
+- takeScreenshot: chat-reply-with-list

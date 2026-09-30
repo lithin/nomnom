@@ -44,6 +44,19 @@ const imageOptionsFixture = [
   },
 ];
 
+const listReplyFixture = [
+  "From your recipes:",
+  "No radish recipes found.",
+  "",
+  "New ideas:",
+  "",
+  "- **Quick Pickled Radishes:** Thinly sliced radishes pickled in vinegar with spices, perfect for adding a tangy crunch to tacos, salads, or sandwiches.",
+  "- **Radish and Cucumber Salad with Dill:** A refreshing salad with thinly sliced radishes and cucumbers, fresh dill and a light vinaigrette.",
+  "- **Roasted Radishes with Brown Butter:** Roasting mellows the peppery bite and brings out a gentle sweetness.",
+  "",
+  "Ready when you are.",
+].join("\n");
+
 const chatMessagesFixture = [
   {
     id: `${RECIPE_ID}-history-1`,
@@ -238,6 +251,14 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && pathname === "/chat") {
     const body = await readBody(req);
     const chatId = body.chatId ?? CHAT_SESSION_ID;
+    const lastText = body.messages?.at(-1)?.text ?? "";
+    // A reply whose only plain paragraphs are short and whose long content is
+    // in list items: the shape that used to collapse the assistant bubble to
+    // the width of its widest short paragraph (see chat-reply-with-list flow).
+    if (lastText.includes("radishes")) {
+      sendJson(res, 200, { reply: listReplyFixture, chatId });
+      return;
+    }
     // Mirror the "surface existing recipes" feature: the assistant replies by
     // surfacing the saved recipe as a recipe:// link the app makes tappable. The
     // reply is just the link so the rendered message bubble's text node is

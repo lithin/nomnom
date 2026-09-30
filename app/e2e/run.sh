@@ -70,13 +70,15 @@ EXPO_PID=$!
 wait_for_url "http://localhost:$METRO_PORT/status" "Metro" 120
 
 echo "==> Waiting for Expo Go on the simulator"
+# No `grep -q` here: it exits on the first match, simctl gets SIGPIPE writing
+# the rest of its (large) app list, and pipefail turns that into a failure.
 for _ in $(seq 1 120); do
-  if xcrun simctl listapps booted 2>/dev/null | grep -q "host.exp.Exponent"; then
+  if xcrun simctl listapps booted 2>/dev/null | grep "host.exp.Exponent" >/dev/null; then
     break
   fi
   sleep 2
 done
-if ! xcrun simctl listapps booted 2>/dev/null | grep -q "host.exp.Exponent"; then
+if ! xcrun simctl listapps booted 2>/dev/null | grep "host.exp.Exponent" >/dev/null; then
   echo "Expo Go did not install on the simulator. See /tmp/nomnom-e2e-expo.log" >&2
   exit 1
 fi
