@@ -1,5 +1,4 @@
 import { fetchWithLogging, getBackendHeaders, getBackendUrl } from "../backend/apiConfig";
-import type { PrefetchedPage } from "./prefetchRecipePages";
 import type { ChatHistoryItem, Message } from "./types";
 
 const readJsonOrThrow = async <T>(response: Response, requestLabel: string): Promise<T> => {
@@ -27,11 +26,7 @@ const readJsonOrThrow = async <T>(response: Response, requestLabel: string): Pro
   }
 };
 
-export const sendChatHistory = async (
-  messages: Message[],
-  chatId?: string,
-  prefetchedPages: PrefetchedPage[] = [],
-) => {
+export const sendChatHistory = async (messages: Message[], chatId?: string) => {
   const response = await fetchWithLogging(`${getBackendUrl()}/chat`, {
     method: "POST",
     headers: getBackendHeaders(),
@@ -41,7 +36,6 @@ export const sendChatHistory = async (
         text: message.text,
       })),
       chatId,
-      prefetchedPages,
     }),
   });
 

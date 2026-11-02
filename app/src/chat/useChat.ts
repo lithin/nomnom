@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 
 import { getChatMessages, sendChatHistory } from "./api";
-import { prefetchRecipePages } from "./prefetchRecipePages";
 import type { Message } from "./types";
 
 export const useChat = (initialMessages: Message[] = [], initialChatId?: string) => {
@@ -34,8 +33,7 @@ export const useChat = (initialMessages: Message[] = [], initialChatId?: string)
     setIsSending(true);
 
     try {
-      const prefetchedPages = await prefetchRecipePages(trimmedInput);
-      const result = await sendChatHistory(nextMessages, chatId, prefetchedPages);
+      const result = await sendChatHistory(nextMessages, chatId);
 
       if (result.chatId) {
         setChatId(result.chatId);

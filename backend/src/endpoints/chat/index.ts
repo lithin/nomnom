@@ -8,7 +8,6 @@ import {
   createChatSession,
   updateChatTitle,
 } from "./chatHistory";
-import { parsePrefetchedPages } from "./prefetchedPages";
 import {
   isRetriableReply,
   looksLikeUnexecutedToolCall,
@@ -119,7 +118,7 @@ export const setupChatEndpoint = (app: Router) => {
         m.role === "user" ? new HumanMessage(m.text) : new AIMessage(m.text),
       );
 
-      const agent = createChatAgent(chatId, parsePrefetchedPages(body.prefetchedPages));
+      const agent = createChatAgent(chatId);
       let result = await agent.invoke({ messages: agentMessages });
 
       let lastMessage = result.messages[result.messages.length - 1];

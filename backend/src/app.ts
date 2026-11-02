@@ -10,9 +10,7 @@ import { enforceApiKey } from "./shared/auth";
 export const createApp = () => {
   const app = express();
 
-  // Above the 100kb default: chat requests can carry recipe JSON-LD the app
-  // fetched on the device (see recipes/importRecipe.ts).
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json());
 
   setupHealthEndpoint(app);
   app.use(enforceApiKey);
