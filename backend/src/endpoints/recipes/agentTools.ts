@@ -1,6 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { extractRecipeFromUrl } from "./importRecipe";
+import { type ImportFailureReason, importRecipe, type PrefetchedPage } from "./importRecipe";
 import { saveRecipe } from "./save";
 import { browseSavedRecipes, searchSavedRecipes } from "./searchRecipes";
 import { updateRecipe } from "./updateRecipe";
@@ -84,37 +84,47 @@ export const browseSavedRecipesTool = tool(
 // fields we found (not a saved recipe) so the agent can present them in the
 // house format, estimate only what's missing, and save via saveRecipe once the
 // user confirms. When the link has no usable recipe data, returns a plain
-// message the agent relays to the user.
-const IMPORT_UNPARSEABLE_MESSAGE =
-  "Could not read a recipe from that link. Tell the user this link can't be parsed and do not fabricate a recipe.";
+// message (per failure reason) the agent relays to the user.
+const IMPORT_FAILURE_MESSAGES: Record<ImportFailureReason, string> = {
+  blocked:
+    "The website blocked automatic access to that page. Tell the user this site doesn't allow recipes to be imported from a link, suggest they paste the recipe text into the chat instead, and do not fabricate a recipe.",
+  "fetch-failed":
+    "Could not load that page. Tell the user the link couldn't be opened (it may be broken or the site may be down), suggest they check it or paste the recipe text instead, and do not fabricate a recipe.",
+  "no-recipe":
+    "The page loaded but has no recipe data that can be read. Tell the user no recipe could be read from that link, suggest they paste the recipe text into the chat instead, and do not fabricate a recipe.",
+};
 
-export const importRecipeFromUrlTool = tool(
-  async ({ url }: { url: string }) => {
-    let result: Awaited<ReturnType<typeof extractRecipeFromUrl>>;
-    try {
-      result = await extractRecipeFromUrl(url);
-    } catch {
-      // Network failure, timeout, non-OK status - treat the same as no recipe.
-      return IMPORT_UNPARSEABLE_MESSAGE;
-    }
+// The model may echo a URL slightly differently from how the user typed it
+// (trailing slash, fragment), so match prefetched pages loosely.
+const normalizeUrl = (url: string) => url.trim().replace(/#.*$/, "").replace(/\/+$/, "");
 
-    if (!result.ok) {
-      return IMPORT_UNPARSEABLE_MESSAGE;
-    }
+// prefetchedPages are the pages the app fetched on the user's device for links
+// in the latest message (see importRecipe.ts for why).
+export const makeImportRecipeFromUrlTool = (prefetchedPages: PrefetchedPage[] = []) =>
+  tool(
+    async ({ url }: { url: string }) => {
+      const prefetched = prefetchedPages.find(
+        (page) => normalizeUrl(page.url) === normalizeUrl(url),
+      );
 
-    // Only the fields present here came from the source; anything absent (e.g.
-    // nutrition, servings) the agent should estimate, per the system prompt.
-    return JSON.stringify(result.recipe);
-  },
-  {
-    name: "importRecipeFromUrl",
-    description:
-      "Read a recipe from a web link (URL) the user shares. Returns the recipe's fields as JSON (title, ingredients, instructions, and servings/nutrition when the page provides them), or a message saying the link can't be parsed.",
-    schema: z.object({
-      url: z.string().describe("The recipe page URL the user shared."),
-    }),
-  },
-);
+      const result = await importRecipe(url, prefetched);
+      if (!result.ok) {
+        return IMPORT_FAILURE_MESSAGES[result.reason];
+      }
+
+      // Only the fields present here came from the source; anything absent (e.g.
+      // nutrition, servings) the agent should estimate, per the system prompt.
+      return JSON.stringify(result.recipe);
+    },
+    {
+      name: "importRecipeFromUrl",
+      description:
+        "Read a recipe from a web link (URL) the user shares. Returns the recipe's fields as JSON (title, ingredients, instructions, and servings/nutrition when the page provides them), or a message saying why the recipe couldn't be read.",
+      schema: z.object({
+        url: z.string().describe("The recipe page URL the user shared."),
+      }),
+    },
+  );
 
 export const makeUpdateRecipeTitleTool = (chatId: string) =>
   tool(

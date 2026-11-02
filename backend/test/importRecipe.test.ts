@@ -1,162 +1,100 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { extractRecipeFromHtml } from "../src/endpoints/recipes/importRecipe";
+import { importRecipe } from "../src/endpoints/recipes/importRecipe";
 
-// Wrap a JSON-LD object in the script tag a real page would carry.
-const pageWith = (jsonLd: unknown): string =>
-  `<!doctype html><html><head>` +
-  `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` +
-  `</head><body>...</body></html>`;
+const URL = "https://example.com/pancakes";
 
-const fullRecipe = {
-  "@context": "https://schema.org",
+const recipeJsonLd = JSON.stringify({
   "@type": "Recipe",
   name: "Lemon Pancakes",
-  recipeYield: "4 servings",
-  recipeIngredient: ["1 cup flour", "1 lemon", "2 eggs"],
-  recipeInstructions: [
-    { "@type": "HowToStep", text: "Mix everything." },
-    { "@type": "HowToStep", text: "Fry until golden." },
-  ],
-  nutrition: {
-    "@type": "NutritionInformation",
-    calories: "220 kcal",
-    proteinContent: "8 g",
-  },
-};
+  recipeIngredient: ["1 cup flour"],
+  recipeInstructions: ["Mix and fry."],
+});
 
-describe("extractRecipeFromHtml", () => {
-  it("extracts all fields from a complete Recipe JSON-LD", () => {
-    const result = extractRecipeFromHtml(pageWith(fullRecipe));
+const htmlResponse = (body: string, status = 200) =>
+  new Response(body, { status, headers: { "content-type": "text/html" } });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe).toEqual({
-      title: "Lemon Pancakes",
-      servings: "4 servings",
-      ingredients: ["1 cup flour", "1 lemon", "2 eggs"],
-      instructions: ["Mix everything.", "Fry until golden."],
-      nutrition: { Calories: "220 kcal", Protein: "8 g" },
+describe("importRecipe", () => {
+  // Stand in for the recipe site: setup.ts's network guard would otherwise
+  // reject the server-side fetch. Each test scripts what the "site" returns.
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  describe("with a page fetched on the device", () => {
+    it("parses the device's JSON-LD without fetching on the server", async () => {
+      const result = await importRecipe(URL, { url: URL, status: 200, jsonLd: [recipeJsonLd] });
+
+      expect(result.ok && result.recipe.title).toBe("Lemon Pancakes");
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("reports no-recipe when the device's page has no Recipe JSON-LD", async () => {
+      const result = await importRecipe(URL, { url: URL, status: 200, jsonLd: [] });
+
+      expect(result).toEqual({ ok: false, reason: "no-recipe" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("reports blocked when the site rejected the device", async () => {
+      const result = await importRecipe(URL, { url: URL, status: 403, jsonLd: [] });
+
+      expect(result).toEqual({ ok: false, reason: "blocked" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("reports fetch-failed for other HTTP errors on the device", async () => {
+      const result = await importRecipe(URL, { url: URL, status: 404, jsonLd: [] });
+      expect(result).toEqual({ ok: false, reason: "fetch-failed" });
+    });
+
+    it("falls back to the server when the device got no response", async () => {
+      fetchMock.mockResolvedValue(
+        htmlResponse(`<script type="application/ld+json">${recipeJsonLd}</script>`),
+      );
+
+      const result = await importRecipe(URL, { url: URL, status: 0, jsonLd: [] });
+
+      expect(result.ok).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 
-  it("finds the Recipe node inside an @graph document", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({
-        "@context": "https://schema.org",
-        "@graph": [{ "@type": "WebPage" }, fullRecipe],
-      }),
-    );
+  describe("fetching on the server", () => {
+    it("parses the fetched page", async () => {
+      fetchMock.mockResolvedValue(
+        htmlResponse(`<script type=application/ld+json>${recipeJsonLd}</script>`),
+      );
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe.title).toBe("Lemon Pancakes");
-  });
+      const result = await importRecipe(URL);
 
-  it("matches a Recipe when @type is an array", () => {
-    const result = extractRecipeFromHtml(pageWith({ ...fullRecipe, "@type": ["Recipe", "Thing"] }));
-    expect(result.ok).toBe(true);
-  });
-
-  it("handles instructions given as a single string", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({ ...fullRecipe, recipeInstructions: "Mix and fry." }),
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe.instructions).toEqual(["Mix and fry."]);
-  });
-
-  it("flattens HowToSection instructions into their steps", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({
-        ...fullRecipe,
-        recipeInstructions: [
-          {
-            "@type": "HowToSection",
-            name: "Batter",
-            itemListElement: [
-              { "@type": "HowToStep", text: "Whisk flour and eggs." },
-              { "@type": "HowToStep", text: "Add lemon." },
-            ],
-          },
-        ],
-      }),
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe.instructions).toEqual(["Whisk flour and eggs.", "Add lemon."]);
-  });
-
-  it("strips inline HTML and decodes entities in text fields", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({
-        ...fullRecipe,
-        recipeIngredient: ["<b>1 cup</b> flour &amp; sugar"],
-        recipeInstructions: ["Mix &#39;til smooth"],
-      }),
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe.ingredients).toEqual(["1 cup flour & sugar"]);
-    expect(result.recipe.instructions).toEqual(["Mix 'til smooth"]);
-  });
-
-  it("omits servings and nutrition when the source lacks them", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({
-        "@type": "Recipe",
-        name: "Bare Recipe",
-        recipeIngredient: ["1 egg"],
-        recipeInstructions: ["Fry it."],
-      }),
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.recipe).toEqual({
-      title: "Bare Recipe",
-      ingredients: ["1 egg"],
-      instructions: ["Fry it."],
+      expect(result.ok && result.recipe.title).toBe("Lemon Pancakes");
     });
-    expect(result.recipe).not.toHaveProperty("servings");
-    expect(result.recipe).not.toHaveProperty("nutrition");
-  });
 
-  it("reports unparseable when instructions are missing, even with other fields", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({
-        "@type": "Recipe",
-        name: "No Steps",
-        recipeIngredient: ["1 egg"],
-        recipeYield: "2",
-        nutrition: { "@type": "NutritionInformation", calories: "90 kcal" },
-      }),
-    );
-    expect(result).toEqual({ ok: false, reason: "unparseable" });
-  });
+    it("reports blocked on a 403 and logs why", async () => {
+      fetchMock.mockResolvedValue(htmlResponse("Access denied", 403));
 
-  it("reports unparseable when ingredients are missing", () => {
-    const result = extractRecipeFromHtml(
-      pageWith({ "@type": "Recipe", name: "No Ingredients", recipeInstructions: ["Cook it."] }),
-    );
-    expect(result).toEqual({ ok: false, reason: "unparseable" });
-  });
+      expect(await importRecipe(URL)).toEqual({ ok: false, reason: "blocked" });
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("blocked"));
+    });
 
-  it("reports unparseable when the page has no Recipe JSON-LD", () => {
-    const result = extractRecipeFromHtml(pageWith({ "@type": "WebPage", name: "Some Article" }));
-    expect(result).toEqual({ ok: false, reason: "unparseable" });
-  });
+    it("reports fetch-failed when the request throws", async () => {
+      fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+      expect(await importRecipe(URL)).toEqual({ ok: false, reason: "fetch-failed" });
+    });
 
-  it("reports unparseable when there is no JSON-LD at all", () => {
-    const result = extractRecipeFromHtml("<html><body>No structured data here.</body></html>");
-    expect(result).toEqual({ ok: false, reason: "unparseable" });
-  });
-
-  it("ignores malformed JSON-LD blocks and reads a valid one", () => {
-    const html =
-      `<script type="application/ld+json">{ not valid json </script>` +
-      `<script type="application/ld+json">${JSON.stringify(fullRecipe)}</script>`;
-    const result = extractRecipeFromHtml(html);
-    expect(result.ok).toBe(true);
+    it("reports no-recipe when the page has no recipe data", async () => {
+      fetchMock.mockResolvedValue(htmlResponse("<html><body>Just a blog post</body></html>"));
+      expect(await importRecipe(URL)).toEqual({ ok: false, reason: "no-recipe" });
+    });
   });
 });
