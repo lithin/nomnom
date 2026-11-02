@@ -65,30 +65,27 @@ cat >"$ENV_LOCAL" <<EOF
 EXPO_PUBLIC_API_URL=http://localhost:$MOCK_PORT
 EXPO_PUBLIC_BACKEND_API_KEY=e2e-mock-key
 EOF
-(cd "$APP_DIR" && npx expo start --ios --port "$METRO_PORT" >/tmp/nomnom-e2e-expo.log 2>&1) &
+# No --ios: that needs Simulator.app, which Xcode 27 replaced with Device Hub.
+# Maestro opens the project in Expo Go itself (flows/common/launch-app.yaml).
+# --offline: anonymous manifest signing. Otherwise Expo CLI wants an Expo login
+# to sign the manifest Expo Go requests, and CI mode can't prompt for it.
+(cd "$APP_DIR" && npx expo start --offline --port "$METRO_PORT" >/tmp/nomnom-e2e-expo.log 2>&1) &
 EXPO_PID=$!
 wait_for_url "http://localhost:$METRO_PORT/status" "Metro" 120
 
-echo "==> Waiting for Expo Go on the simulator"
-# No `grep -q` here: it exits on the first match, simctl gets SIGPIPE writing
-# the rest of its (large) app list, and pipefail turns that into a failure.
-for _ in $(seq 1 120); do
-  if xcrun simctl listapps booted 2>/dev/null | grep "host.exp.Exponent" >/dev/null; then
-    break
-  fi
-  sleep 2
-done
-if ! xcrun simctl listapps booted 2>/dev/null | grep "host.exp.Exponent" >/dev/null; then
-  echo "Expo Go did not install on the simulator. See /tmp/nomnom-e2e-expo.log" >&2
-  exit 1
-fi
-
-# Pin Maestro to the booted iOS simulator so it never picks up a running
-# Android emulator or another device.
+# Pin to the booted iOS simulator so Maestro never picks up a running Android
+# emulator or another device.
 IOS_UDID="$(xcrun simctl list devices booted | grep -Eo '[0-9A-F]{8}-[0-9A-F-]{27}' | head -1)"
 if [[ -z "$IOS_UDID" ]]; then
   echo "No booted iOS simulator found." >&2
   exit 1
+fi
+
+# No `grep -q` here: it exits on the first match, simctl gets SIGPIPE writing
+# the rest of its (large) app list, and pipefail turns that into a failure.
+if ! xcrun simctl listapps "$IOS_UDID" 2>/dev/null | grep "host.exp.Exponent" >/dev/null; then
+  echo "==> Installing Expo Go on the simulator"
+  node "$E2E_DIR/install-expo-go.mjs" "$IOS_UDID"
 fi
 
 # Suppress Expo Go's first-run developer-menu sheet, which otherwise covers
