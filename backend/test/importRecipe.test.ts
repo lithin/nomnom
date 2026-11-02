@@ -159,4 +159,13 @@ describe("extractRecipeFromHtml", () => {
     const result = extractRecipeFromHtml(html);
     expect(result.ok).toBe(true);
   });
+
+  it("reads ld+json blocks whose type attribute is unquoted (minified pages)", () => {
+    const html =
+      `<html><head><script type=application/ld+json class=yoast-schema-graph>` +
+      `${JSON.stringify({ "@context": "https://schema.org", "@graph": [fullRecipe] })}` +
+      `</script></head></html>`;
+    const result = extractRecipeFromHtml(html);
+    expect(result.ok && result.recipe.title).toBe("Lemon Pancakes");
+  });
 });

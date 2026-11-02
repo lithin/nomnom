@@ -54,9 +54,12 @@ export const fetchPageHtml = async (url: string): Promise<string> => {
 };
 
 // Pull the raw contents of every <script type="application/ld+json"> block.
+// The attribute may be unquoted: minified pages (common on WordPress with
+// caching plugins) emit `<script type=application/ld+json class=...>`.
 const extractJsonLdBlocks = (html: string): string[] => {
   const blocks: string[] = [];
-  const scriptRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  const scriptRegex =
+    /<script[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi;
 
   let match = scriptRegex.exec(html);
   while (match !== null) {

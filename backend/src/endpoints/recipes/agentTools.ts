@@ -1,5 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
+import { getErrorMessage } from "../../shared/utils";
 import { extractRecipeFromUrl } from "./importRecipe";
 import { saveRecipe } from "./save";
 import { browseSavedRecipes, searchSavedRecipes } from "./searchRecipes";
@@ -93,12 +94,15 @@ export const importRecipeFromUrlTool = tool(
     let result: Awaited<ReturnType<typeof extractRecipeFromUrl>>;
     try {
       result = await extractRecipeFromUrl(url);
-    } catch {
-      // Network failure, timeout, non-OK status - treat the same as no recipe.
+    } catch (error) {
+      // Network failure, timeout, non-OK status (e.g. a 403 from bot
+      // protection) - treat the same as no recipe, but log why.
+      console.warn(`Recipe import failed to fetch ${url}: ${getErrorMessage(error)}`);
       return IMPORT_UNPARSEABLE_MESSAGE;
     }
 
     if (!result.ok) {
+      console.warn(`Recipe import found no usable Recipe JSON-LD at ${url}`);
       return IMPORT_UNPARSEABLE_MESSAGE;
     }
 
