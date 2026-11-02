@@ -15,8 +15,9 @@ local mock server so runs are fast, deterministic, and never touch real data.
   dismisses Expo Go's onboarding sheet); `flows/config.yaml` limits test
   discovery to top-level files and disables retries.
 - `run.sh` — orchestrates a run: starts the mock server, starts the Expo dev
-  server with `EXPO_PUBLIC_API_URL` pointing at the mock, boots the iOS
-  simulator with Expo Go, then runs all flows.
+  server with `EXPO_PUBLIC_API_URL` pointing at the mock, installs Expo Go on
+  the booted iOS simulator if needed (via `install-expo-go.mjs`), then runs
+  all flows.
 
 ## Running
 
@@ -27,7 +28,9 @@ bash app/e2e/run.sh app/e2e/flows/recipe-edit-opens-prepopulated-chat.yaml   # s
 
 Prerequisites (one-time):
 
-- Xcode with an iOS simulator
+- Xcode with an iOS simulator, booted before running (from Device Hub or
+  `xcrun simctl boot "<device name>"`). The script doesn't use
+  `expo start --ios`, which needs the pre-Xcode 27 Simulator.app.
 - Maestro: `brew install mobile-dev-inc/tap/maestro`
 
 Expo Go is installed on the simulator automatically on first run. Logs from
