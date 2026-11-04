@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The tool reaches the network via extractRecipeFromUrl; mock it at the module
 // boundary so the tool logic runs without any outbound request (see setup.ts).
@@ -16,6 +16,11 @@ const invoke = async (url: string): Promise<string> => {
 describe("importRecipeFromUrl tool", () => {
   beforeEach(() => {
     extractRecipeFromUrl.mockReset();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("returns the parsed recipe as JSON when extraction succeeds", async () => {
@@ -39,13 +44,19 @@ describe("importRecipeFromUrl tool", () => {
     const message = await invoke("https://example.com/not-a-recipe");
 
     expect(message).toContain("can't be parsed");
+    expect(console.warn).toHaveBeenCalledWith(
+      "Recipe import found no usable Recipe JSON-LD at https://example.com/not-a-recipe",
+    );
   });
 
-  it("returns the unparseable message when the fetch throws", async () => {
-    extractRecipeFromUrl.mockRejectedValue(new Error("network down"));
+  it("returns the unparseable message and logs why when the fetch throws", async () => {
+    extractRecipeFromUrl.mockRejectedValue(new Error("Fetch failed with status 403"));
 
     const message = await invoke("https://example.com/boom");
 
     expect(message).toContain("can't be parsed");
+    expect(console.warn).toHaveBeenCalledWith(
+      "Recipe import failed to fetch https://example.com/boom: Fetch failed with status 403",
+    );
   });
 });
